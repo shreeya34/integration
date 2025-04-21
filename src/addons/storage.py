@@ -1,9 +1,13 @@
 import json
 
-class FileStoragePlugin:
-    def __init__(self, path="contacts.json"):
-        self.path = path
+def save_contacts_to_json(contacts: dict, filename: str = "contacts.json"):
+    contacts_list = contacts.get("parties", [])
 
-    def save(self, data):
-        with open(self.path, "w") as f:
-            json.dump(data, f, indent=4)
+    if not contacts_list:
+        print("No contacts to save.")
+        return
+
+    with open(filename, mode='w', encoding='utf-8') as file:
+        json.dump(contacts_list, file, indent=4, ensure_ascii=False)
+
+    print(f"Saved {len(contacts_list)} contacts to {filename}")

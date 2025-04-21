@@ -13,5 +13,5 @@ class Spec:
 def get_plugin_manager() -> pluggy.PluginManager:
     pm = pluggy.PluginManager("crmintegration")
     pm.add_hookspecs(Spec)
-    pm.register(CapsulePlugin())  # Register the plugin
+    pm.register(CapsulePlugin())  
     return pm

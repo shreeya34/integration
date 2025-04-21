@@ -28,6 +28,7 @@ class CapsulePlugin:
 def exchange_token(code: str, client_id: str, client_secret: str):
     url = "https://api.capsulecrm.com/oauth/token"
     data = {
+        "grant_type": "authorization_code",
         "code": code,
         "client_id": client_id,
         "client_secret": client_secret,
@@ -48,6 +49,7 @@ def exchange_token(code: str, client_id: str, client_secret: str):
         return None
 
 
+
 import requests
 
 def get_contacts(access_token: str,page: int=1):
@@ -66,3 +68,4 @@ def get_contacts(access_token: str,page: int=1):
         return {"error": "Unauthorized - Invalid or expired token"}
     else:
         return {"error": response.text}
+

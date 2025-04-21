@@ -15,6 +15,8 @@ annotated-types==0.7.0
 anyio==4.9.0
     # via httpx
     # via starlette
+black==25.1.0
+    # via crmintegration
 certifi==2025.1.31
     # via httpcore
     # via httpx
@@ -22,6 +24,7 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
     # via requests
 click==8.1.8
+    # via black
     # via uvicorn
 fastapi==0.115.12
     # via crmintegration
@@ -36,6 +39,14 @@ idna==3.10
     # via anyio
     # via httpx
     # via requests
+mypy-extensions==1.0.0
+    # via black
+packaging==25.0
+    # via black
+pathspec==0.12.1
+    # via black
+platformdirs==4.3.7
+    # via black
 pluggy==1.5.0
     # via crmintegration
 pydantic==2.11.3
