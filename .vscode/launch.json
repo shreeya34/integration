@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: FastAPI",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": [
+          "src.api.main:app",          // Change this to your FastAPI entry point
+          "--reload"
+        ],
+        "jinja": true,
+        "justMyCode": true,
+        "env": {
+          "ENVIRONMENT": "development"
+        }
+      }
+    ]
+  }
+  
