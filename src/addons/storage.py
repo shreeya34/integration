@@ -5,17 +5,17 @@ from typing import Optional, Dict, Any
 
 TOKEN_FILE_PATH = "tokens.json"
 
-def save_tokens_to_json(tokens: Dict[str, Any]) -> None:
-    """Save tokens to JSON file with proper expiration time."""
-    # Ensure we have an expiration time
-    if 'expires_in' in tokens and 'expires_at' not in tokens:
-        expires_at = datetime.now() + timedelta(seconds=tokens['expires_in'])
-        tokens['expires_at'] = expires_at.isoformat()
-    
-    # Save all token data
-    with open(TOKEN_FILE_PATH, 'w') as file:
+
+def save_tokens_to_json(tokens: Dict[str, Any]):
+
+    if "expires_in" in tokens and "expires_at" not in tokens:
+        expires_at = datetime.now() + timedelta(seconds=tokens["expires_in"])
+        tokens["expires_at"] = expires_at.isoformat()
+
+    with open(TOKEN_FILE_PATH, "w") as file:
         json.dump({"access_token_response": tokens}, file, indent=4)
     print(f"Tokens saved to {TOKEN_FILE_PATH}")
+
 
 def get_stored_tokens() -> Optional[Dict[str, Any]]:
     """Retrieve stored tokens, automatically refresh if expired."""
@@ -24,10 +24,10 @@ def get_stored_tokens() -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        with open(TOKEN_FILE_PATH, 'r') as file:
+        with open(TOKEN_FILE_PATH, "r") as file:
             data = json.load(file)
             token_data = data.get("access_token_response", {})
-            
+
             if not token_data:
                 print("No token data found in file")
                 return None
@@ -47,6 +47,7 @@ def get_stored_tokens() -> Optional[Dict[str, Any]]:
             if refresh_token:
                 print("Attempting to refresh token...")
                 from addons.integration.plugins.capsule import refresh_access_token
+
                 new_tokens = refresh_access_token(refresh_token)
                 if new_tokens:
                     save_tokens_to_json(new_tokens)
@@ -73,7 +74,7 @@ def save_contacts_to_json(contacts: dict, filename: str = "contacts.json"):
 
 
 def clear_tokens() -> bool:
-    """Remove the token file if it exists"""
+
     try:
         if os.path.exists(TOKEN_FILE_PATH):
             os.remove(TOKEN_FILE_PATH)
