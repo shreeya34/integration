@@ -1,9 +1,0 @@
-{
-    "refresh_token": "4WbUrpkDi5h2mcaC96tT2obZuDzg4cIf2F0O9gyTCA27DLmDUAw5WBf7UboO+mAP",
-    "access_token": "4WbUrpkDi5h2mcaC96tT2iGpT65YSzEJ8HXY9s+gc0ZS/43V2sCNufCokOQltrDw",
-    "expires_in": 604799,
-    "token_type": "bearer",
-    "scope": "read write",
-    "subdomain": "crm-9745",
-    "expires_at": "2025-04-29T13:55:30.600571"
-}

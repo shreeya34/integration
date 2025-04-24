@@ -1,12 +1,12 @@
-from config.settings import AuthSettings
+from config.settings import AppSettings  # Changed from AuthSettings to AppSettings
 from addons.integration.hooks import hookspec
-from addons.integration.plugins.capsule import CapsulePlugin
+from addons.integration.plugins.capsule import CRMPlugin
 import pluggy
 
 
 class Spec:
     @hookspec
-    def get_auth_url(self, settings: AuthSettings, session):
+    def get_auth_url(self, crm_name: str, settings: AppSettings, session: dict):
         """Return the OAuth authorization URL for a CRM integration."""
         ...
 
@@ -14,5 +14,5 @@ class Spec:
 def get_plugin_manager() -> pluggy.PluginManager:
     pm = pluggy.PluginManager("crmintegration")
     pm.add_hookspecs(Spec)
-    pm.register(CapsulePlugin())
+    pm.register(CRMPlugin())
     return pm

@@ -1,21 +1,22 @@
 from pydantic import BaseModel
+from typing import Dict, Any
+
 from pydantic_settings import BaseSettings
 
+class CRMOAuthConfig(BaseModel):
+    auth_url: str         
+    token_url: str          
+    scope: str            
+    redirect_path: str     
 
-class AuthSettings(BaseModel):
+class CRMSettings(BaseModel):
     client_id: str
     client_secret: str
-
-
-class CrmSettings(BaseModel):
-    code: str
-    access_token: str
-
+    config: CRMOAuthConfig  
 
 class AppSettings(BaseSettings):
-    auth: AuthSettings
-    crm: CrmSettings
-
+    crms: Dict[str, CRMSettings] 
+    
     class Config:
         env_file = ".env"
         env_nested_delimiter = "__"
