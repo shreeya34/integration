@@ -1,4 +1,3 @@
-# addons/integration/plugins/capsule.py
 import json
 import random
 import string
@@ -14,13 +13,12 @@ from core.exception import (
     APIRequestError
 )
 settings = settings.AppSettings()
-
-class CapsuleCRMPlugin:
+class ZohoCRMPlugin:
     def __init__(self):
-        self.crm_name = "capsule"
+        self.crm_name = "zoho"
         self.crm_settings = settings.crms.get(self.crm_name)
         if not self.crm_settings:
-            raise OAuthError(f"Capsule CRM not configured")
+            raise OAuthError(f"Zoho CRM not configured")
 
     def _generate_state(self) -> str:
         return "".join(random.choices(string.ascii_letters + string.digits, k=32))
@@ -32,6 +30,8 @@ class CapsuleCRMPlugin:
             "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             "scope": self.crm_settings.config.scope,
             "state": self._generate_state(),
+            "access_type": "offline",
+            "prompt": "consent"
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
 
@@ -97,9 +97,9 @@ class CapsuleCRMPlugin:
 
     def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
         try:
-            url = f"https://api.capsulecrm.com/api/v2/parties?page={page}"
+            url = f"https://www.zohoapis.com/crm/v2/Contacts?page={page}"
             headers = {
-                "Authorization": f"Bearer {access_token}",
+                "Authorization": f"Zoho-oauthtoken {access_token}",
                 "Accept": "application/json",
             }
 
@@ -110,7 +110,7 @@ class CapsuleCRMPlugin:
 
             if response.status_code == 401:
                 new_tokens = self.refresh_access_token(refresh_token)
-                headers["Authorization"] = f"Bearer {new_tokens['access_token']}"
+                headers["Authorization"] = f"Zoho-oauthtoken {new_tokens['access_token']}"
                 retry_response = requests.get(url, headers=headers, timeout=30)
 
                 if retry_response.status_code == 200:
