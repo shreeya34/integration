@@ -35,7 +35,7 @@ class CapsuleCRMPlugin:
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
 
-    def exchange_token(self, code: str) -> dict:
+    def exchange_token(self, code: str,state:str=None) -> dict:
         try:
             data = {
                 "grant_type": "authorization_code",

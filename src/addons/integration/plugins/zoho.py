@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 import requests
 from requests.exceptions import RequestException
+from addons.integration.hooks import hookimpl
 from config import settings
 from core.exception import (
     OAuthError,
@@ -23,6 +24,7 @@ class ZohoCRMPlugin:
     def _generate_state(self) -> str:
         return "".join(random.choices(string.ascii_letters + string.digits, k=32))
 
+    @hookimpl
     def get_auth_url(self) -> str:
         params = {
             "response_type": "code",
@@ -34,8 +36,9 @@ class ZohoCRMPlugin:
             "prompt": "consent"
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
-
-    def exchange_token(self, code: str) -> dict:
+    
+    @hookimpl   
+    def exchange_token(self, code: str,state:str=None) -> dict:
         try:
             data = {
                 "grant_type": "authorization_code",
@@ -63,7 +66,8 @@ class ZohoCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenExchangeError(f"Token exchange request failed: {str(e)}")
-
+        
+    @hookimpl
     def refresh_access_token(self, refresh_token: str) -> dict:
         try:
             data = {
@@ -94,7 +98,8 @@ class ZohoCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
-
+        
+    @hookimpl
     def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
         try:
             url = f"https://www.zohoapis.com/crm/v2/Contacts?page={page}"

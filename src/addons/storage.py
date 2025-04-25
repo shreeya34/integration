@@ -11,13 +11,11 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
         expires_at = datetime.now() + timedelta(seconds=tokens["expires_in"])
         tokens["expires_at"] = expires_at.isoformat()
 
-    # Load existing tokens if the file exists
     all_tokens = {}
     if os.path.exists(TOKEN_FILE_PATH):
         with open(TOKEN_FILE_PATH, "r") as file:
             all_tokens = json.load(file)
 
-    # Save tokens under the CRM name
     all_tokens[crm_name] = {
         "status": "success",
         **tokens
@@ -38,12 +36,10 @@ def get_stored_tokens() -> Optional[Dict[str, Any]]:
         with open(TOKEN_FILE_PATH, "r") as file:
             data = json.load(file)
 
-            # We assume only one CRM is stored at a time.
             for crm_name, token_data in data.items():
                 if not token_data:
                     continue
 
-                # Check expiry
                 expires_at = token_data.get("expires_at")
                 if expires_at and datetime.now() < datetime.fromisoformat(expires_at):
                     print(f"Valid token found for {crm_name}")
