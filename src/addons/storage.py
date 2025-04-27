@@ -12,7 +12,6 @@ import json
 import os
 from typing import Optional, Dict, Any
 
-TOKEN_FILE_PATH = "tokens.json"
 
 
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
@@ -25,6 +24,9 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
         with open(TOKEN_FILE_PATH, "r") as file:
             all_tokens = json.load(file)
 
+    # Add a timestamp for last authentication
+    tokens["last_authenticated"] = datetime.now().isoformat()
+
     all_tokens[crm_name] = {
         "status": "success",
         **tokens
@@ -34,9 +36,9 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
         json.dump(all_tokens, file, indent=4)
 
     print(f"Tokens saved under '{crm_name}' in {TOKEN_FILE_PATH}")
-
+    
 def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Retrieve stored tokens for a specific CRM"""
+    """Retrieve stored tokens for a specific CRM (or the most recently used CRM if none specified)."""
     if not os.path.exists(TOKEN_FILE_PATH):
         print("No token file found")
         return None
@@ -45,29 +47,36 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         with open(TOKEN_FILE_PATH, "r") as file:
             all_tokens = json.load(file)
 
-        # If no CRM specified, try to find the most recently used one
-        if not crm_name:
-            # Find the token with the latest expiration
-            latest_token = None
-            for name, token_data in all_tokens.items():
-                if not token_data:
-                    continue
-                if latest_token is None or \
-                   datetime.fromisoformat(token_data.get("expires_at", "")) > \
-                   datetime.fromisoformat(latest_token.get("expires_at", "")):
-                    latest_token = token_data
-                    latest_token["crm_name"] = name
-            return latest_token
+        # If CRM is specified, return its tokens
+        if crm_name:
+            crm_name = crm_name.lower()
+            if crm_name not in all_tokens:
+                print(f"No tokens found for {crm_name}")
+                return None
+            token_data = all_tokens[crm_name]
+            token_data["crm_name"] = crm_name
+            return token_data
 
-        # Get tokens for specific CRM
-        crm_name = crm_name.lower()
-        if crm_name not in all_tokens:
-            print(f"No tokens found for {crm_name}")
-            return None
+        # If no CRM specified, find the most recently authenticated one
+        latest_token = None
+        latest_auth_time = None
 
-        token_data = all_tokens[crm_name]
-        token_data["crm_name"] = crm_name
-        return token_data
+        for name, token_data in all_tokens.items():
+            if not token_data:
+                continue
+
+            auth_time_str = token_data.get("last_authenticated")
+            if not auth_time_str:
+                continue  # Skip if no auth time recorded
+
+            auth_time = datetime.fromisoformat(auth_time_str)
+
+            if latest_auth_time is None or auth_time > latest_auth_time:
+                latest_auth_time = auth_time
+                latest_token = token_data
+                latest_token["crm_name"] = name
+
+        return latest_token
 
     except Exception as e:
         print(f"Error reading token file: {e}")

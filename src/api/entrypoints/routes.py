@@ -68,28 +68,28 @@ def refresh_token(crm_name: str, refresh_token: str):
 @router.get("/contacts")
 def fetch_contacts(request: Request):
     try:
-        # Get the CRM name from the query parameters
-        crm_name = request.query_params.get("crm")
-        if not crm_name:
-            raise HTTPException(
-                status_code=400,
-                detail="CRM parameter required (e.g., ?crm=zoho)"
-            )
-
-        # Get tokens specifically for this CRM
-        tokens = get_stored_tokens(crm_name.lower())
+        # Get tokens for the most recently used CRM
+        tokens = get_stored_tokens()
         if not tokens:
             raise HTTPException(
                 status_code=401,
-                detail=f"Authorization required for {crm_name}. Please authenticate first."
+                detail="Authorization required. Please authenticate with a CRM first."
+            )
+
+        crm_name = tokens.get("crm_name")
+        if not crm_name:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not determine CRM from stored tokens."
             )
 
         # Verify we have the required tokens
         access_token = tokens.get("access_token")
-        if not access_token:
+        refresh_token = tokens.get("refresh_token")
+        if not access_token or not refresh_token:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid token format. Missing access token."
+                detail="Invalid token format. Missing required tokens."
             )
 
         # Get the page parameter
@@ -107,9 +107,12 @@ def fetch_contacts(request: Request):
         # Fetch contacts
         contacts = plugin.get_contacts(
             access_token=access_token,
-            refresh_token=tokens.get("refresh_token"),
+            refresh_token=refresh_token,
             page=page
         )
+        
+        # Optionally save to JSON (you can remove this if not needed)
+        save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
         
         return {
             "status": "success",
