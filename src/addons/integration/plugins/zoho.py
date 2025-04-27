@@ -6,8 +6,10 @@ from urllib.parse import urlencode
 import requests
 from requests.exceptions import RequestException
 from addons.integration.hooks import hookimpl
+from addons.storage import get_state, save_state
 from config import settings
 from core.exception import (
+    InvalidStateError,
     OAuthError,
     TokenRefreshError,
     TokenExchangeError,
@@ -22,16 +24,20 @@ class ZohoCRMPlugin:
             raise OAuthError(f"Zoho CRM not configured")
 
     def _generate_state(self) -> str:
-        return "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        state= "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        save_state(state, self.crm_name)
+        return state
 
     @hookimpl
     def get_auth_url(self) -> str:
+        state = self._generate_state()
+
         params = {
             "response_type": "code",
             "client_id": self.crm_settings.client_id,
             "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             "scope": self.crm_settings.config.scope,
-            "state": self._generate_state(),
+            "state": state,
             "access_type": "offline",
             "prompt": "consent"
         }
@@ -39,6 +45,11 @@ class ZohoCRMPlugin:
     
     @hookimpl   
     def exchange_token(self, code: str,state:str=None) -> dict:
+        if state:
+            stored_state = get_state(self.crm_name)
+            if not stored_state or stored_state != state:
+                raise InvalidStateError(status_code=400, detail="Invalid state parameter")
+            print("State verified successfully")
         try:
             data = {
                 "grant_type": "authorization_code",

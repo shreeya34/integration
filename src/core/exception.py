@@ -13,11 +13,11 @@ class TokenRefreshError(OAuthError):
         super().__init__(message, *args)
 
 
-class InvalidStateError(Exception):
-    """Exception raised when the state parameter doesn't match."""
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+class InvalidStateError(OAuthError):
+    def __init__(self, message: str = "Invalid state", status_code: int = None, *args):
+        self.status_code = status_code
+        super().__init__(message, *args)
+
 
 
 

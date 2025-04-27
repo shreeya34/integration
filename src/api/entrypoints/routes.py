@@ -1,4 +1,5 @@
 # api/routes/integrations.py
+from typing import Optional
 from fastapi import APIRouter, Request, HTTPException
 from addons.integration.plugins.zoho import ZohoCRMPlugin
 from addons.integration.plugins.capsule import CapsuleCRMPlugin
@@ -6,8 +7,9 @@ from addons.storage import (
     get_stored_tokens,
     save_contacts_to_json,
     save_tokens_to_json,
+    get_state
 )
-from core.exception import APIRequestError
+from core.exception import APIRequestError, InvalidStateError
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
@@ -23,20 +25,36 @@ def get_plugin(crm_name: str):
 def get_authorization_url(crm_name: str):
     try:
         plugin = get_plugin(crm_name)
-        return {"auth_url": plugin.get_auth_url()}
+        auth_url = plugin.get_auth_url()
+        return {"auth_url": auth_url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/callback/{crm_name}")
 def oauth_callback(crm_name: str, code: str, state: str):
     try:
+        stored_state = get_state(crm_name)
+        
+        if not stored_state:
+            raise InvalidStateError("No state found", 400)
+        
+        if stored_state != state:
+            raise InvalidStateError("Invalid state parameter", 400)
+        
         plugin = get_plugin(crm_name)
         token_response = plugin.exchange_token(code)
+        
+        # Ensure we're saving to the correct CRM section
         save_tokens_to_json(token_response, crm_name)
-        return {"status": "success", **token_response}
+        
+        # Return the CRM name in the response
+        return {
+            "status": "success",
+            "crm": crm_name,
+            **token_response
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/refresh-token/{crm_name}")
 def refresh_token(crm_name: str, refresh_token: str):
     try:
@@ -50,26 +68,60 @@ def refresh_token(crm_name: str, refresh_token: str):
 @router.get("/contacts")
 def fetch_contacts(request: Request):
     try:
-        tokens = get_stored_tokens()
-        if not tokens:
-            raise HTTPException(status_code=401, detail="Authorization required")
-            
-        crm_name = tokens.get("crm_name")
+        # Get the CRM name from the query parameters
+        crm_name = request.query_params.get("crm")
         if not crm_name:
-            raise HTTPException(status_code=400, detail="No CRM associated")
+            raise HTTPException(
+                status_code=400,
+                detail="CRM parameter required (e.g., ?crm=zoho)"
+            )
 
-        page = int(request.query_params.get("page", 1))
-        plugin = get_plugin(crm_name)
+        # Get tokens specifically for this CRM
+        tokens = get_stored_tokens(crm_name.lower())
+        if not tokens:
+            raise HTTPException(
+                status_code=401,
+                detail=f"Authorization required for {crm_name}. Please authenticate first."
+            )
+
+        # Verify we have the required tokens
+        access_token = tokens.get("access_token")
+        if not access_token:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid token format. Missing access token."
+            )
+
+        # Get the page parameter
+        try:
+            page = int(request.query_params.get("page", 1))
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid page number"
+            )
+
+        # Get the appropriate plugin
+        plugin = get_plugin(crm_name.lower())
         
+        # Fetch contacts
         contacts = plugin.get_contacts(
-            access_token=tokens["access_token"],
+            access_token=access_token,
             refresh_token=tokens.get("refresh_token"),
             page=page
         )
         
-        save_contacts_to_json(contacts)
-        return {"contacts": contacts, "crm": crm_name}
-    except APIRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid page number")
+        return {
+            "status": "success",
+            "crm": crm_name.lower(),
+            "contacts": contacts,
+            "message": f"Contacts fetched from {crm_name} CRM"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch contacts: {str(e)}"
+        )

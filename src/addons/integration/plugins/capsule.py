@@ -1,4 +1,3 @@
-# addons/integration/plugins/capsule.py
 import json
 import random
 import string
@@ -6,8 +5,10 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 import requests
 from requests.exceptions import RequestException
+from addons.storage import get_state, save_state
 from config import settings
 from core.exception import (
+    InvalidStateError,
     OAuthError,
     TokenRefreshError,
     TokenExchangeError,
@@ -23,19 +24,28 @@ class CapsuleCRMPlugin:
             raise OAuthError(f"Capsule CRM not configured")
 
     def _generate_state(self) -> str:
-        return "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        state= "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        save_state(state, self.crm_name)
+        return state
 
     def get_auth_url(self) -> str:
+        state = self._generate_state()
+
         params = {
             "response_type": "code",
             "client_id": self.crm_settings.client_id,
             "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             "scope": self.crm_settings.config.scope,
-            "state": self._generate_state(),
+            "state": state,
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
 
     def exchange_token(self, code: str,state:str=None) -> dict:
+        if state:
+            stored_state = get_state(self.crm_name)
+            if not stored_state or stored_state != state:
+                raise InvalidStateError("State verification failed", status_code=400)
+            print("State verified successfully")
         try:
             data = {
                 "grant_type": "authorization_code",

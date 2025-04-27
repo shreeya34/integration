@@ -4,6 +4,15 @@ import os
 from typing import Optional, Dict, Any
 
 TOKEN_FILE_PATH = "tokens.json"
+STATE_FILE_PATH = "states.json"
+
+
+from datetime import datetime, timedelta
+import json
+import os
+from typing import Optional, Dict, Any
+
+TOKEN_FILE_PATH = "tokens.json"
 
 
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
@@ -26,46 +35,43 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
 
     print(f"Tokens saved under '{crm_name}' in {TOKEN_FILE_PATH}")
 
-def get_stored_tokens() -> Optional[Dict[str, Any]]:
-    """Retrieve stored tokens, auto-refresh if expired."""
+def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Retrieve stored tokens for a specific CRM"""
     if not os.path.exists(TOKEN_FILE_PATH):
         print("No token file found")
         return None
 
     try:
         with open(TOKEN_FILE_PATH, "r") as file:
-            data = json.load(file)
+            all_tokens = json.load(file)
 
-            for crm_name, token_data in data.items():
+        # If no CRM specified, try to find the most recently used one
+        if not crm_name:
+            # Find the token with the latest expiration
+            latest_token = None
+            for name, token_data in all_tokens.items():
                 if not token_data:
                     continue
+                if latest_token is None or \
+                   datetime.fromisoformat(token_data.get("expires_at", "")) > \
+                   datetime.fromisoformat(latest_token.get("expires_at", "")):
+                    latest_token = token_data
+                    latest_token["crm_name"] = name
+            return latest_token
 
-                expires_at = token_data.get("expires_at")
-                if expires_at and datetime.now() < datetime.fromisoformat(expires_at):
-                    print(f"Valid token found for {crm_name}")
-                    token_data["crm_name"] = crm_name
-                    return token_data
-                else:
-                    print("Token expired")
-
-                refresh_token = token_data.get("refresh_token")
-                if refresh_token:
-                    print(f"Refreshing token for {crm_name}...")
-                    from addons.integration.plugins.capsule import refresh_access_token
-                    new_tokens = refresh_access_token(refresh_token)
-                    if new_tokens:
-                        save_tokens_to_json(new_tokens, crm_name)
-                        new_tokens["crm_name"] = crm_name
-                        return new_tokens
-                    else:
-                        print("Failed to refresh token")
-            print("No valid token found")
+        # Get tokens for specific CRM
+        crm_name = crm_name.lower()
+        if crm_name not in all_tokens:
+            print(f"No tokens found for {crm_name}")
             return None
+
+        token_data = all_tokens[crm_name]
+        token_data["crm_name"] = crm_name
+        return token_data
 
     except Exception as e:
         print(f"Error reading token file: {e}")
         return None
-
 
 
 def save_contacts_to_json(contacts: dict, filename: str = "contacts.json"):
@@ -100,3 +106,55 @@ def clear_tokens(crm_name: Optional[str] = None) -> bool:
     except Exception as e:
         print(f"Error removing token(s): {e}")
         return False
+
+
+# New functions for state management (without clearing)
+def save_state(state: str, crm_name: str) -> None:
+    """Save the state parameter for OAuth CSRF protection"""
+    all_states = {}
+    if os.path.exists(STATE_FILE_PATH):
+        with open(STATE_FILE_PATH, "r") as file:
+            all_states = json.load(file)
+    
+    # Store state with timestamp for expiration checking
+    all_states[crm_name] = {
+        "state": state,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    with open(STATE_FILE_PATH, "w") as file:
+        json.dump(all_states, file, indent=4)
+    
+    print(f"State saved for {crm_name}")
+
+
+def get_state(crm_name: str) -> Optional[str]:
+    """
+    Retrieve the stored state for the specified CRM.
+    Returns None if state doesn't exist or is expired (10 min limit).
+    """
+    if not os.path.exists(STATE_FILE_PATH):
+        print("No state file found")
+        return None
+    
+    try:
+        with open(STATE_FILE_PATH, "r") as file:
+            all_states = json.load(file)
+        
+        if crm_name not in all_states:
+            print(f"No state found for {crm_name}")
+            return None
+        
+        state_data = all_states[crm_name]
+        created_at = datetime.fromisoformat(state_data["created_at"])
+        
+        # Check if state has expired (10 minutes)
+        if datetime.now() - created_at > timedelta(minutes=10):
+            print(f"State for {crm_name} has expired")
+            return None
+        
+        return state_data["state"]
+    
+    except Exception as e:
+        print(f"Error retrieving state: {e}")
+        return None
