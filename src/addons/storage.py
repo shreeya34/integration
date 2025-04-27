@@ -38,7 +38,7 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
     print(f"Tokens saved under '{crm_name}' in {TOKEN_FILE_PATH}")
     
 def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Retrieve stored tokens for a specific CRM (or the most recently used CRM if none specified)."""
+    """Retrieve stored tokens for a specific CRM (or t he most recently used CRM if none specified)."""
     if not os.path.exists(TOKEN_FILE_PATH):
         print("No token file found")
         return None
@@ -47,7 +47,6 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         with open(TOKEN_FILE_PATH, "r") as file:
             all_tokens = json.load(file)
 
-        # If CRM is specified, return its tokens
         if crm_name:
             crm_name = crm_name.lower()
             if crm_name not in all_tokens:
@@ -57,7 +56,6 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
             token_data["crm_name"] = crm_name
             return token_data
 
-        # If no CRM specified, find the most recently authenticated one
         latest_token = None
         latest_auth_time = None
 
@@ -67,7 +65,7 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
 
             auth_time_str = token_data.get("last_authenticated")
             if not auth_time_str:
-                continue  # Skip if no auth time recorded
+                continue  
 
             auth_time = datetime.fromisoformat(auth_time_str)
 
@@ -117,7 +115,6 @@ def clear_tokens(crm_name: Optional[str] = None) -> bool:
         return False
 
 
-# New functions for state management (without clearing)
 def save_state(state: str, crm_name: str) -> None:
     """Save the state parameter for OAuth CSRF protection"""
     all_states = {}
@@ -125,7 +122,6 @@ def save_state(state: str, crm_name: str) -> None:
         with open(STATE_FILE_PATH, "r") as file:
             all_states = json.load(file)
     
-    # Store state with timestamp for expiration checking
     all_states[crm_name] = {
         "state": state,
         "created_at": datetime.now().isoformat()
@@ -157,7 +153,6 @@ def get_state(crm_name: str) -> Optional[str]:
         state_data = all_states[crm_name]
         created_at = datetime.fromisoformat(state_data["created_at"])
         
-        # Check if state has expired (10 minutes)
         if datetime.now() - created_at > timedelta(minutes=10):
             print(f"State for {crm_name} has expired")
             return None

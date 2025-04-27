@@ -1,5 +1,3 @@
-# api/routes/integrations.py
-from typing import Optional
 from fastapi import APIRouter, Request, HTTPException
 from addons.integration.plugins.zoho import ZohoCRMPlugin
 from addons.integration.plugins.capsule import CapsuleCRMPlugin
@@ -9,7 +7,7 @@ from addons.storage import (
     save_tokens_to_json,
     get_state
 )
-from core.exception import APIRequestError, InvalidStateError
+from core.exception import InvalidStateError
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
@@ -44,10 +42,8 @@ def oauth_callback(crm_name: str, code: str, state: str):
         plugin = get_plugin(crm_name)
         token_response = plugin.exchange_token(code)
         
-        # Ensure we're saving to the correct CRM section
         save_tokens_to_json(token_response, crm_name)
         
-        # Return the CRM name in the response
         return {
             "status": "success",
             "crm": crm_name,
@@ -68,7 +64,6 @@ def refresh_token(crm_name: str, refresh_token: str):
 @router.get("/contacts")
 def fetch_contacts(request: Request):
     try:
-        # Get tokens for the most recently used CRM
         tokens = get_stored_tokens()
         if not tokens:
             raise HTTPException(
@@ -83,7 +78,6 @@ def fetch_contacts(request: Request):
                 detail="Could not determine CRM from stored tokens."
             )
 
-        # Verify we have the required tokens
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
         if not access_token or not refresh_token:
@@ -92,7 +86,6 @@ def fetch_contacts(request: Request):
                 detail="Invalid token format. Missing required tokens."
             )
 
-        # Get the page parameter
         try:
             page = int(request.query_params.get("page", 1))
         except ValueError:
@@ -101,17 +94,14 @@ def fetch_contacts(request: Request):
                 detail="Invalid page number"
             )
 
-        # Get the appropriate plugin
         plugin = get_plugin(crm_name.lower())
         
-        # Fetch contacts
         contacts = plugin.get_contacts(
             access_token=access_token,
             refresh_token=refresh_token,
             page=page
         )
         
-        # Optionally save to JSON (you can remove this if not needed)
         save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
         
         return {
