@@ -18,4 +18,3 @@ def get_plugin_manager() -> pluggy.PluginManager:
     pm.register(CapsuleCRMPlugin())
     pm.register(ZohoCRMPlugin())
     return pm
-

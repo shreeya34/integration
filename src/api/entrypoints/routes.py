@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException,status
 from addons.integration.plugins.zoho import ZohoCRMPlugin
 from addons.integration.plugins.capsule import CapsuleCRMPlugin
 from addons.storage import (
@@ -7,8 +7,15 @@ from addons.storage import (
     save_tokens_to_json,
     get_state,
 )
-from core.exception import InvalidStateError
-
+from core.exception import (
+    CRMIntegrationError,
+    ContactsFetchError,
+    InvalidPageNumberError,
+    InvalidStateError,
+    OAuthError,
+    TokenExchangeError,
+    UnsupportedCRMError,
+)
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
 
@@ -69,40 +76,65 @@ def fetch_contacts(request: Request):
     try:
         tokens = get_stored_tokens()
         if not tokens:
-            raise HTTPException(
-                status_code=401,
+            raise OAuthError(
                 detail="Authorization required. Please authenticate with a CRM first.",
+                status_code=status.HTTP_401_UNAUTHORIZED
             )
 
         crm_name = tokens.get("crm_name")
         if not crm_name:
-            raise HTTPException(
-                status_code=400, detail="Could not determine CRM from stored tokens."
+            raise CRMIntegrationError(
+                detail="Could not determine CRM from stored tokens.",
+                status_code=status.HTTP_400_BAD_REQUEST
             )
 
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
         if not access_token or not refresh_token:
-            raise HTTPException(
-                status_code=400, detail="Invalid token format. Missing required tokens."
+            raise TokenExchangeError(
+                detail="Invalid token format. Missing required tokens.",
+                status_code=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             page = int(request.query_params.get("page", 1))
+            if page < 1:
+                raise InvalidPageNumberError(detail="Page number must be positive")
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid page number")
+            raise InvalidPageNumberError()
 
-        plugin = get_plugin(crm_name.lower())
+        try:
+            plugin = get_plugin(crm_name.lower())
+        except Exception as e:
+            raise UnsupportedCRMError(
+                crm_name=crm_name,
+                detail=f"Failed to initialize CRM plugin: {str(e)}"
+            )
 
-        contacts = plugin.get_contacts(
-            access_token=access_token, refresh_token=refresh_token, page=page
-        )
+        try:
+            contacts = plugin.get_contacts(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                page=page
+            )
+        except Exception as e:
+            raise ContactsFetchError(
+                detail=f"Failed to fetch contacts from {crm_name}: {str(e)}",
+                crm_name=crm_name,
+                page=page
+            )
 
-        if crm_name.lower() == "zoho":
-            transformed_contacts = {"parties": contacts.get("data", [])}
-            save_contacts_to_json(transformed_contacts, f"{crm_name}_contacts.json")
-        else:
-            save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
+        try:
+            if crm_name.lower() == "zoho":
+                transformed_contacts = {"parties": contacts.get("data", [])}
+                save_contacts_to_json(transformed_contacts, f"{crm_name}_contacts.json")
+            else:
+                save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
+        except Exception as e:
+            raise CRMIntegrationError(
+                detail=f"Failed to save contacts: {str(e)}",
+                operation="contact_save"
+            )
 
         return {
             "status": "success",
@@ -111,9 +143,9 @@ def fetch_contacts(request: Request):
             "message": f"Contacts fetched from {crm_name} CRM",
         }
 
-    except HTTPException:
-        raise
+
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch contacts: {str(e)}"
+        raise ContactsFetchError(
+            detail=f"Unexpected error while fetching contacts: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

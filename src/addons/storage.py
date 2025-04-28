@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 import json
 import os
@@ -7,6 +6,7 @@ from typing import Optional, Dict, Any
 
 TOKEN_FILE_PATH = "tokens.json"
 STATE_FILE_PATH = "states.json"
+
 
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
     if "expires_in" in tokens and "expires_at" not in tokens:
@@ -20,16 +20,14 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
 
     tokens["last_authenticated"] = datetime.now().isoformat()
 
-    all_tokens[crm_name] = {
-        "status": "success",
-        **tokens
-    }
+    all_tokens[crm_name] = {"status": "success", **tokens}
 
     with open(TOKEN_FILE_PATH, "w") as file:
         json.dump(all_tokens, file, indent=4)
 
     print(f"Tokens saved under '{crm_name}' in {TOKEN_FILE_PATH}")
-    
+
+
 def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Retrieve stored tokens for a specific CRM (or t he most recently used CRM if none specified)."""
     if not os.path.exists(TOKEN_FILE_PATH):
@@ -58,7 +56,7 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
 
             auth_time_str = token_data.get("last_authenticated")
             if not auth_time_str:
-                continue  
+                continue
 
             auth_time = datetime.fromisoformat(auth_time_str)
 
@@ -73,24 +71,27 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         print(f"Error reading token file: {e}")
         return None
 
-def save_contacts_to_json(contacts: dict, filename: str = "contacts.json", crm_name: str = None):
-   
+
+def save_contacts_to_json(
+    contacts: dict, filename: str = "contacts.json", crm_name: str = None
+):
+
     contacts_list = []
-    
-    # Handle different CRM response structures
+
     if crm_name and crm_name.lower() == "zoho":
         contacts_list = contacts.get("data", [])
-    else:  # Default for Capsule and others
+    else:
         contacts_list = contacts.get("parties", [])
-    
+
     if not contacts_list:
         print("No contacts to save.")
         return
-        
+
     with open(filename, mode="w", encoding="utf-8") as file:
         json.dump(contacts_list, file, indent=4, ensure_ascii=False)
-    
+
     print(f"Saved {len(contacts_list)} contacts to {filename}")
+
 
 def clear_tokens(crm_name: Optional[str] = None) -> bool:
     try:
@@ -122,44 +123,38 @@ def save_state(state: str, crm_name: str) -> None:
     if os.path.exists(STATE_FILE_PATH):
         with open(STATE_FILE_PATH, "r") as file:
             all_states = json.load(file)
-    
-    all_states[crm_name] = {
-        "state": state,
-        "created_at": datetime.now().isoformat()
-    }
-    
+
+    all_states[crm_name] = {"state": state, "created_at": datetime.now().isoformat()}
+
     with open(STATE_FILE_PATH, "w") as file:
         json.dump(all_states, file, indent=4)
-    
+
     print(f"State saved for {crm_name}")
 
 
 def get_state(crm_name: str) -> Optional[str]:
-    """
-    Retrieve the stored state for the specified CRM.
-    Returns None if state doesn't exist or is expired (10 min limit).
-    """
+
     if not os.path.exists(STATE_FILE_PATH):
         print("No state file found")
         return None
-    
+
     try:
         with open(STATE_FILE_PATH, "r") as file:
             all_states = json.load(file)
-        
+
         if crm_name not in all_states:
             print(f"No state found for {crm_name}")
             return None
-        
+
         state_data = all_states[crm_name]
         created_at = datetime.fromisoformat(state_data["created_at"])
-        
+
         if datetime.now() - created_at > timedelta(minutes=10):
             print(f"State for {crm_name} has expired")
             return None
-        
+
         return state_data["state"]
-    
+
     except Exception as e:
         print(f"Error retrieving state: {e}")
         return None

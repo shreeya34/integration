@@ -12,9 +12,11 @@ from core.exception import (
     OAuthError,
     TokenRefreshError,
     TokenExchangeError,
-    APIRequestError
+    APIRequestError,
 )
+
 settings = settings.AppSettings()
+
 
 class CapsuleCRMPlugin:
     def __init__(self):
@@ -24,10 +26,10 @@ class CapsuleCRMPlugin:
             raise OAuthError(f"Capsule CRM not configured")
 
     def _generate_state(self) -> str:
-        state= "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        state = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         save_state(state, self.crm_name)
         return state
-    
+
     @hookimpl
     def get_auth_url(self) -> str:
         state = self._generate_state()
@@ -38,13 +40,11 @@ class CapsuleCRMPlugin:
             "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             "scope": self.crm_settings.config.scope,
             "state": state,
-            "access_type": "offline",
-            "prompt": "consent"
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
 
     @hookimpl
-    def exchange_token(self, code: str,state:str=None) -> dict:
+    def exchange_token(self, code: str, state: str = None) -> dict:
         if state:
             stored_state = get_state(self.crm_name)
             if not stored_state or stored_state != state:
@@ -77,7 +77,7 @@ class CapsuleCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenExchangeError(f"Token exchange request failed: {str(e)}")
-        
+
     @hookimpl
     def refresh_access_token(self, refresh_token: str) -> dict:
         try:
@@ -109,9 +109,11 @@ class CapsuleCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
-        
+
     @hookimpl
-    def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
+    def get_contacts(
+        self, access_token: str, refresh_token: str, page: int = 1
+    ) -> dict:
         try:
             url = f"https://api.capsulecrm.com/api/v2/parties?page={page}"
             headers = {

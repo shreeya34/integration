@@ -13,9 +13,12 @@ from core.exception import (
     OAuthError,
     TokenRefreshError,
     TokenExchangeError,
-    APIRequestError
+    APIRequestError,
 )
+
 settings = settings.AppSettings()
+
+
 class ZohoCRMPlugin:
     def __init__(self):
         self.crm_name = "zoho"
@@ -24,7 +27,7 @@ class ZohoCRMPlugin:
             raise OAuthError(f"Zoho CRM not configured")
 
     def _generate_state(self) -> str:
-        state= "".join(random.choices(string.ascii_letters + string.digits, k=32))
+        state = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         save_state(state, self.crm_name)
         return state
 
@@ -39,16 +42,18 @@ class ZohoCRMPlugin:
             "scope": self.crm_settings.config.scope,
             "state": state,
             "access_type": "offline",
-            "prompt": "consent"
+            "prompt": "consent",
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
-    
-    @hookimpl   
-    def exchange_token(self, code: str,state:str=None) -> dict:
+
+    @hookimpl
+    def exchange_token(self, code: str, state: str = None) -> dict:
         if state:
             stored_state = get_state(self.crm_name)
             if not stored_state or stored_state != state:
-                raise InvalidStateError(status_code=400, detail="Invalid state parameter")
+                raise InvalidStateError(
+                    status_code=400, detail="Invalid state parameter"
+                )
             print("State verified successfully")
         try:
             data = {
@@ -77,7 +82,7 @@ class ZohoCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenExchangeError(f"Token exchange request failed: {str(e)}")
-        
+
     @hookimpl
     def refresh_access_token(self, refresh_token: str) -> dict:
         try:
@@ -109,9 +114,11 @@ class ZohoCRMPlugin:
             return token_data
         except RequestException as e:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
-        
+
     @hookimpl
-    def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
+    def get_contacts(
+        self, access_token: str, refresh_token: str, page: int = 1
+    ) -> dict:
         try:
             url = f"https://www.zohoapis.com/crm/v2/Contacts?page={page}"
             headers = {
@@ -126,7 +133,9 @@ class ZohoCRMPlugin:
 
             if response.status_code == 401:
                 new_tokens = self.refresh_access_token(refresh_token)
-                headers["Authorization"] = f"Zoho-oauthtoken {new_tokens['access_token']}"
+                headers["Authorization"] = (
+                    f"Zoho-oauthtoken {new_tokens['access_token']}"
+                )
                 retry_response = requests.get(url, headers=headers, timeout=30)
 
                 if retry_response.status_code == 200:
