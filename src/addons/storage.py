@@ -73,16 +73,24 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         print(f"Error reading token file: {e}")
         return None
 
-
-def save_contacts_to_json(contacts: dict, filename: str = "contacts.json"):
-    contacts_list = contacts.get("parties", [])
+def save_contacts_to_json(contacts: dict, filename: str = "contacts.json", crm_name: str = None):
+   
+    contacts_list = []
+    
+    # Handle different CRM response structures
+    if crm_name and crm_name.lower() == "zoho":
+        contacts_list = contacts.get("data", [])
+    else:  # Default for Capsule and others
+        contacts_list = contacts.get("parties", [])
+    
     if not contacts_list:
         print("No contacts to save.")
         return
+        
     with open(filename, mode="w", encoding="utf-8") as file:
         json.dump(contacts_list, file, indent=4, ensure_ascii=False)
+    
     print(f"Saved {len(contacts_list)} contacts to {filename}")
-
 
 def clear_tokens(crm_name: Optional[str] = None) -> bool:
     try:

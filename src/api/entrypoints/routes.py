@@ -63,6 +63,7 @@ def refresh_token(crm_name: str, refresh_token: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
 @router.get("/contacts")
 def fetch_contacts(request: Request):
     try:
@@ -97,7 +98,11 @@ def fetch_contacts(request: Request):
             access_token=access_token, refresh_token=refresh_token, page=page
         )
 
-        save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
+        if crm_name.lower() == "zoho":
+            transformed_contacts = {"parties": contacts.get("data", [])}
+            save_contacts_to_json(transformed_contacts, f"{crm_name}_contacts.json")
+        else:
+            save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
 
         return {
             "status": "success",
