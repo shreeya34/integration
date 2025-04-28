@@ -1,18 +1,12 @@
+
 from datetime import datetime, timedelta
 import json
 import os
 from typing import Optional, Dict, Any
+
 
 TOKEN_FILE_PATH = "tokens.json"
 STATE_FILE_PATH = "states.json"
-
-
-from datetime import datetime, timedelta
-import json
-import os
-from typing import Optional, Dict, Any
-
-
 
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
     if "expires_in" in tokens and "expires_at" not in tokens:
@@ -24,7 +18,6 @@ def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
         with open(TOKEN_FILE_PATH, "r") as file:
             all_tokens = json.load(file)
 
-    # Add a timestamp for last authentication
     tokens["last_authenticated"] = datetime.now().isoformat()
 
     all_tokens[crm_name] = {

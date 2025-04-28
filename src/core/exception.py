@@ -19,8 +19,6 @@ class InvalidStateError(OAuthError):
         super().__init__(message, *args)
 
 
-
-
 class TokenExchangeError(OAuthError):
     def __init__(
         self, message: str = "Failed to exchange authorization code for tokens", *args

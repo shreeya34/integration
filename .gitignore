@@ -10,3 +10,4 @@ wheels/
 .venv
 .states.json
 .tokens.json
+.env/

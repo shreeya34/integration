@@ -1,4 +1,3 @@
-import json
 import random
 import string
 from datetime import datetime, timedelta
@@ -37,6 +36,8 @@ class CapsuleCRMPlugin:
             "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             "scope": self.crm_settings.config.scope,
             "state": state,
+            "access_type": "offline",
+            "prompt": "consent"
         }
         return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
 
