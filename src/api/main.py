@@ -27,7 +27,6 @@ def init_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     app.add_middleware(ExceptionHandlerMiddleware)
- 
 
     app.include_router(routes.router)
     app.include_router(callback_router)
