@@ -32,32 +32,29 @@ def get_plugin(crm_name: str):
 
 @router.get("/authorization-url")
 def get_auth_urls(crm_name: Optional[str] = None):
+    try:
         if crm_name is None:
             return {
-                crm.value: CRMName.get_plugin(crm.value).get_auth_url()
+                crm.value: get_plugin(crm.value).get_auth_url()
                 for crm in CRMName
             }
-
-        plugin = CRMName.get_plugin(crm_name)
+        
+        plugin = get_plugin(crm_name)
         return {"crm": crm_name, "auth_url": plugin.get_auth_url()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-  
 @router.get("/callback/{crm_name}")
 def oauth_callback(crm_name: str, code: str, state: str):
     try:
         stored_state = get_state(crm_name)
-
-        if not stored_state:
-            raise InvalidStateError("No state found", 400)
-
-        if stored_state != state:
+        if not stored_state or stored_state != state:
             raise InvalidStateError("Invalid state parameter", 400)
 
         plugin = get_plugin(crm_name)
         token_response = plugin.exchange_token(code)
-
         save_tokens_to_json(token_response, crm_name)
-
+        
         return {"status": "success", "crm": crm_name, **token_response}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -77,7 +74,6 @@ def refresh_token(crm_name: str, refresh_token: str):
 
 @router.get("/contacts")
 def fetch_contacts(request: Request):
-    try:
         tokens = get_stored_tokens()
         if not tokens:
             raise OAuthError(
@@ -148,8 +144,4 @@ def fetch_contacts(request: Request):
         }
 
 
-    except Exception as e:
-        raise ContactsFetchError(
-            detail=f"Unexpected error while fetching contacts: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+ 

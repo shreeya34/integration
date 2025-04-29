@@ -26,14 +26,14 @@ class ZohoCRMPlugin:
         if not self.crm_settings:
             raise OAuthError(f"Zoho CRM not configured")
 
-    def _generate_state(self) -> str:
+    def _generate_random_value(self) -> str:
         state = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         save_state(state, self.crm_name)
         return state
 
     @hookimpl
     def get_auth_url(self) -> str:
-        state = self._generate_state()
+        state = self. _generate_random_value()
 
         params = {
             "response_type": "code",

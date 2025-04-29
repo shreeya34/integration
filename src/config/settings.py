@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Dict, Any
+from pydantic import BaseModel, Field
+from typing import Dict, Any, List
 
 from pydantic_settings import BaseSettings
 
@@ -18,8 +18,8 @@ class CRMSettings(BaseModel):
 
 
 class AppSettings(BaseSettings):
-    crms: Dict[str, CRMSettings]
-
+    crms: Dict[str, CRMSettings] = Field(..., alias="CRMS")
+    active_crms: List[str] = Field(default=[], alias="ACTIVE_CRMS")
     class Config:
         env_file = ".env"
         env_nested_delimiter = "__"

@@ -1,17 +1,28 @@
 from enum import Enum
-
-from addons.integration.plugins.capsule import CapsuleCRMPlugin
+from typing import Type, Any, Dict
 from addons.integration.plugins.zoho import ZohoCRMPlugin
+from addons.integration.plugins.capsule import CapsuleCRMPlugin
 
 class CRMName(str, Enum):
     ZOHO = "zoho"
     CAPSULE = "capsule"
     
     @classmethod
-    def get_plugin(cls, crm_name: str):
+    def get_plugin(cls, crm_name: str) -> Any:
         crm_name = crm_name.lower()
-        if crm_name == cls.ZOHO:
-            return ZohoCRMPlugin()
-        elif crm_name == cls.CAPSULE:
-            return CapsuleCRMPlugin()
-        raise ValueError(f"Unsupported CRM: {crm_name}")
+        plugin_classes = {
+            cls.ZOHO: ZohoCRMPlugin,
+            cls.CAPSULE: CapsuleCRMPlugin,
+        }
+        try:
+            crm_enum = cls(crm_name) 
+            return plugin_classes[crm_enum]()
+        except ValueError:
+            supported_crms = [e.value for e in cls]
+            raise ValueError(
+                f"Unsupported CRM: {crm_name}. Supported CRMs: {', '.join(supported_crms)}"
+            )
+    
+    @classmethod
+    def get_active_plugins(cls, active_crms: list[str]) -> list[Any]:
+        return [cls.get_plugin(crm) for crm in active_crms]
