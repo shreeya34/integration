@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, HTTPException,status
+from typing import Optional
+from fastapi import APIRouter, Path, Request, HTTPException,status
 from addons.integration.plugins.zoho import ZohoCRMPlugin
 from addons.integration.plugins.capsule import CapsuleCRMPlugin
 from addons.storage import (
@@ -16,28 +17,31 @@ from core.exception import (
     TokenExchangeError,
     UnsupportedCRMError,
 )
+from addons.integration.crm_enum import CRMName  
+
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
 
 def get_plugin(crm_name: str):
-    crm_name = crm_name.lower()
-    if crm_name == "zoho":
-        return ZohoCRMPlugin()
-    elif crm_name == "capsule":
-        return CapsuleCRMPlugin()
-    raise HTTPException(status_code=400, detail=f"Unsupported CRM: {crm_name}")
-
-
-@router.get("/authorization-url/{crm_name}")
-def get_authorization_url(crm_name: str):
     try:
-        plugin = get_plugin(crm_name)
-        auth_url = plugin.get_auth_url()
-        return {"auth_url": auth_url}
-    except Exception as e:
+        return CRMName.get_plugin(crm_name)
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+@router.get("/authorization-url")
+def get_auth_urls(crm_name: Optional[str] = None):
+        if crm_name is None:
+            return {
+                crm.value: CRMName.get_plugin(crm.value).get_auth_url()
+                for crm in CRMName
+            }
+
+        plugin = CRMName.get_plugin(crm_name)
+        return {"crm": crm_name, "auth_url": plugin.get_auth_url()}
+
+  
 @router.get("/callback/{crm_name}")
 def oauth_callback(crm_name: str, code: str, state: str):
     try:

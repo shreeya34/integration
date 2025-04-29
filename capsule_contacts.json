@@ -20,6 +20,13 @@
         "lastContactedAt": null,
         "pictureURL": "https://facehub.appspot.com/default/person?text=SS&size=100&colour=1638358700",
         "title": null,
+        "phoneNumbers": [
+            {
+                "id": 601448732,
+                "type": null,
+                "number": "53627872777"
+            }
+        ],
         "addresses": [],
         "emailAddresses": [
             {
@@ -28,14 +35,7 @@
                 "address": "shreeya@yopmail.com"
             }
         ],
-        "websites": [],
-        "phoneNumbers": [
-            {
-                "id": 601448732,
-                "type": null,
-                "number": "53627872777"
-            }
-        ]
+        "websites": []
     },
     {
         "id": 270004326,
@@ -48,6 +48,7 @@
         "updatedAt": "2025-04-21T01:52:15Z",
         "lastContactedAt": null,
         "pictureURL": "https://capsule-pictures-prod.s3.amazonaws.com/6a991dea-8623-4cef-9f3f-b5ff25509d81?size=100&v=0",
+        "phoneNumbers": [],
         "addresses": [],
         "emailAddresses": [
             {
@@ -92,8 +93,7 @@
                 "service": "LINKED_IN",
                 "url": "https://www.linkedin.com/company/capsulecrm/"
             }
-        ],
-        "phoneNumbers": []
+        ]
     },
     {
         "id": 270004639,
@@ -115,6 +115,13 @@
         "lastContactedAt": null,
         "pictureURL": "https://facehub.appspot.com/default/person?text=PM&size=100&colour=-451649182",
         "title": null,
+        "phoneNumbers": [
+            {
+                "id": 601448741,
+                "type": "Mobile",
+                "number": "9865328190"
+            }
+        ],
         "addresses": [],
         "emailAddresses": [
             {
@@ -123,14 +130,7 @@
                 "address": "palpasa1@gmail.com"
             }
         ],
-        "websites": [],
-        "phoneNumbers": [
-            {
-                "id": 601448741,
-                "type": "Mobile",
-                "number": "9865328190"
-            }
-        ]
+        "websites": []
     },
     {
         "id": 270004640,
@@ -143,10 +143,10 @@
         "updatedAt": "2025-04-21T04:10:22Z",
         "lastContactedAt": null,
         "pictureURL": "https://d365sd3k9yw37.cloudfront.net/a/1745583182/theme/default/images/avatar/organisation.svg",
+        "phoneNumbers": [],
         "addresses": [],
         "emailAddresses": [],
-        "websites": [],
-        "phoneNumbers": []
+        "websites": []
     },
     {
         "id": 270005003,
@@ -168,6 +168,13 @@
         "lastContactedAt": null,
         "pictureURL": "https://facehub.appspot.com/default/person?text=SS&size=100&colour=1245889742",
         "title": null,
+        "phoneNumbers": [
+            {
+                "id": 601449568,
+                "type": "Mobile",
+                "number": "9865403929"
+            }
+        ],
         "addresses": [],
         "emailAddresses": [
             {
@@ -184,13 +191,6 @@
                 "service": "LINKED_IN",
                 "url": "http://https//www.linkedin.com"
             }
-        ],
-        "phoneNumbers": [
-            {
-                "id": 601449568,
-                "type": "Mobile",
-                "number": "9865403929"
-            }
         ]
     },
     {
@@ -204,10 +204,10 @@
         "updatedAt": "2025-04-21T06:40:13Z",
         "lastContactedAt": null,
         "pictureURL": "https://d365sd3k9yw37.cloudfront.net/a/1745583182/theme/default/images/avatar/organisation.svg",
+        "phoneNumbers": [],
         "addresses": [],
         "emailAddresses": [],
-        "websites": [],
-        "phoneNumbers": []
+        "websites": []
     },
     {
         "id": 270286992,
@@ -229,6 +229,13 @@
         "lastContactedAt": null,
         "pictureURL": "https://facehub.appspot.com/default/person?text=TS&size=100&colour=-1389188743",
         "title": null,
+        "phoneNumbers": [
+            {
+                "id": 602094139,
+                "type": "Mobile",
+                "number": "98333222444"
+            }
+        ],
         "addresses": [],
         "emailAddresses": [
             {
@@ -237,14 +244,7 @@
                 "address": "tisha1@gmail.com"
             }
         ],
-        "websites": [],
-        "phoneNumbers": [
-            {
-                "id": 602094139,
-                "type": "Mobile",
-                "number": "98333222444"
-            }
-        ]
+        "websites": []
     },
     {
         "id": 270286993,
@@ -257,10 +257,10 @@
         "updatedAt": "2025-04-28T02:22:31Z",
         "lastContactedAt": null,
         "pictureURL": "https://d365sd3k9yw37.cloudfront.net/a/1745583182/theme/default/images/avatar/organisation.svg",
+        "phoneNumbers": [],
         "addresses": [],
         "emailAddresses": [],
-        "websites": [],
-        "phoneNumbers": []
+        "websites": []
     },
     {
         "id": 270289211,
@@ -282,6 +282,13 @@
         "lastContactedAt": null,
         "pictureURL": "https://facehub.appspot.com/default/person?text=AS&size=100&colour=1935697674",
         "title": null,
+        "phoneNumbers": [
+            {
+                "id": 602099184,
+                "type": "Mobile",
+                "number": "9865656565"
+            }
+        ],
         "addresses": [],
         "emailAddresses": [
             {
@@ -290,13 +297,6 @@
                 "address": "amisha1@gmail.com"
             }
         ],
-        "websites": [],
-        "phoneNumbers": [
-            {
-                "id": 602099184,
-                "type": "Mobile",
-                "number": "9865656565"
-            }
-        ]
+        "websites": []
     }
 ]

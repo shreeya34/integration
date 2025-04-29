@@ -4,7 +4,6 @@ from typing import Optional, Any
 
 
 class IntegrationError(HTTPException):
-    """Base exception for all integration-related errors"""
 
     def __init__(
         self,
@@ -18,7 +17,6 @@ class IntegrationError(HTTPException):
 
 
 class OAuthError(IntegrationError):
-    """Base exception for OAuth 2.0 related errors"""
 
     def __init__(
         self,
@@ -30,7 +28,6 @@ class OAuthError(IntegrationError):
 
 
 class TokenRefreshError(OAuthError):
-    """Failed to refresh access token"""
 
     def __init__(
         self,
@@ -84,7 +81,6 @@ class APIRequestError(IntegrationError):
 
 
 class UnsupportedCRMError(APIRequestError):
-    """Unsupported CRM requested"""
 
     def __init__(
         self,
