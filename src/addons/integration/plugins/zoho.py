@@ -3,8 +3,9 @@ import random
 import string
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
-import requests
-from requests.exceptions import RequestException
+import httpx
+from httpx import HTTPError
+
 from addons.integration.hooks import hookimpl
 from addons.storage import get_state, save_state
 from config import settings
@@ -15,25 +16,30 @@ from core.exception import (
     TokenExchangeError,
     APIRequestError,
 )
+from api.utils.logger import get_logger
+
+logger = get_logger()
 
 settings = settings.AppSettings()
-
 
 class ZohoCRMPlugin:
     def __init__(self):
         self.crm_name = "zoho"
         self.crm_settings = settings.crms.get(self.crm_name)
         if not self.crm_settings:
-            raise OAuthError(f"Zoho CRM not configured")
+            logger.error("Zoho CRM not configured")
+            raise OAuthError("Zoho CRM not configured")
+        logger.info("ZohoCRMPlugin initialized successfully")
 
     def _generate_random_value(self) -> str:
         state = "".join(random.choices(string.ascii_letters + string.digits, k=32))
         save_state(state, self.crm_name)
+        logger.debug(f"Generated state: {state}")
         return state
 
     @hookimpl
     def get_auth_url(self) -> str:
-        state = self. _generate_random_value()
+        state = self._generate_random_value()
 
         params = {
             "response_type": "code",
@@ -44,17 +50,19 @@ class ZohoCRMPlugin:
             "access_type": "offline",
             "prompt": "consent",
         }
-        return f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
+        auth_url = f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
+        logger.info("Generated auth URL")
+        return auth_url
 
     @hookimpl
     def exchange_token(self, code: str, state: str = None) -> dict:
         if state:
             stored_state = get_state(self.crm_name)
             if not stored_state or stored_state != state:
-                raise InvalidStateError(
-                    status_code=400, detail="Invalid state parameter"
-                )
-            print("State verified successfully")
+                logger.warning("Invalid state parameter")
+                raise InvalidStateError(status_code=400, detail="Invalid state parameter")
+            logger.info("State verified successfully")
+
         try:
             data = {
                 "grant_type": "authorization_code",
@@ -64,23 +72,21 @@ class ZohoCRMPlugin:
                 "redirect_uri": f"http://localhost:8000{self.crm_settings.config.redirect_path}",
             }
 
-            response = requests.post(
+            response = httpx.post(
                 self.crm_settings.config.token_url,
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
-                timeout=30,
+                timeout=30.0,
             )
-
             if response.status_code != 200:
                 error_data = response.json()
-                raise TokenExchangeError(
-                    f"Token exchange failed: {error_data.get('error', 'Unknown error')}"
-                )
-
+                logger.error(f"Token exchange failed: {error_data}")
+                raise TokenExchangeError("Token exchange failed")
             token_data = response.json()
-            token_data["crm_name"] = self.crm_name
+            logger.info("Token exchanged successfully")
             return token_data
-        except RequestException as e:
+        except HTTPError as e:
+            logger.exception("Token exchange request failed")
             raise TokenExchangeError(f"Token exchange request failed: {str(e)}")
 
     @hookimpl
@@ -93,32 +99,25 @@ class ZohoCRMPlugin:
                 "client_secret": self.crm_settings.client_secret,
             }
 
-            response = requests.post(
+            response = httpx.post(
                 self.crm_settings.config.token_url,
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
-                timeout=30,
+                timeout=30.0,
             )
-
             if response.status_code != 200:
                 error_data = response.json()
-                raise TokenRefreshError(
-                    f"Token refresh failed: {error_data.get('error', 'Unknown error')}"
-                )
-
+                logger.error(f"Token refresh failed: {error_data}")
+                raise TokenRefreshError("Token refresh failed")
             token_data = response.json()
-            token_data["expires_at"] = (
-                datetime.now() + timedelta(seconds=token_data.get("expires_in", 3600))
-            ).isoformat()
-            token_data["crm_name"] = self.crm_name
+            logger.info("Access token refreshed successfully")
             return token_data
-        except RequestException as e:
+        except HTTPError as e:
+            logger.exception("Token refresh request failed")
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
 
     @hookimpl
-    def get_contacts(
-        self, access_token: str, refresh_token: str, page: int = 1
-    ) -> dict:
+    def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
         try:
             url = f"https://www.zohoapis.com/crm/v2/Contacts?page={page}"
             headers = {
@@ -126,22 +125,22 @@ class ZohoCRMPlugin:
                 "Accept": "application/json",
             }
 
-            response = requests.get(url, headers=headers, timeout=30)
-
+            response = httpx.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
+                logger.info(f"Fetched contacts page {page} successfully")
                 return response.json()
-
             if response.status_code == 401:
+                logger.warning("Access token expired, attempting refresh")
                 new_tokens = self.refresh_access_token(refresh_token)
-                headers["Authorization"] = (
-                    f"Zoho-oauthtoken {new_tokens['access_token']}"
-                )
-                retry_response = requests.get(url, headers=headers, timeout=30)
-
+                headers["Authorization"] = f"Zoho-oauthtoken {new_tokens['access_token']}"
+                retry_response = httpx.get(url, headers=headers, timeout=30.0)
                 if retry_response.status_code == 200:
+                    logger.info("Fetched contacts after token refresh")
                     return retry_response.json()
+                logger.error("Failed to fetch contacts after token refresh")
                 raise APIRequestError("Failed after token refresh")
-
+            logger.error(f"Failed to fetch contacts: Status {response.status_code}")
             raise APIRequestError(f"Failed with status {response.status_code}")
-        except RequestException as e:
+        except HTTPError as e:
+            logger.exception("Contact request failed")
             raise APIRequestError(f"Request failed: {str(e)}")

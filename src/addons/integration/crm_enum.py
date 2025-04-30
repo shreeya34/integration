@@ -23,6 +23,3 @@ class CRMName(str, Enum):
                 f"Unsupported CRM: {crm_name}. Supported CRMs: {', '.join(supported_crms)}"
             )
     
-    @classmethod
-    def get_active_plugins(cls, active_crms: list[str]) -> list[Any]:
-        return [cls.get_plugin(crm) for crm in active_crms]

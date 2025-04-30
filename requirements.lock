@@ -78,5 +78,5 @@ typing-inspection==0.4.0
     # via pydantic-settings
 urllib3==2.4.0
     # via requests
-uvicorn==0.34.1
+uvicorn==0.34.2
     # via crmintegration

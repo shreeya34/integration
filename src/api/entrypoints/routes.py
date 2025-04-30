@@ -1,5 +1,8 @@
-from typing import Optional
-from fastapi import APIRouter, Path, Request, HTTPException,status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, Request, HTTPException,status
+from pluggy import PluginManager
+import pluggy
+from addons.integration.hookspec import Spec, get_plugin_manager
 from addons.integration.plugins.zoho import ZohoCRMPlugin
 from addons.integration.plugins.capsule import CapsuleCRMPlugin
 from addons.storage import (
@@ -23,26 +26,22 @@ router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
 
 def get_plugin(crm_name: str):
-    try:
         return CRMName.get_plugin(crm_name)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+    
+    
 
 
 @router.get("/authorization-url")
 def get_auth_urls(crm_name: Optional[str] = None):
-    try:
         if crm_name is None:
             return {
-                crm.value: get_plugin(crm.value).get_auth_url()
+                crm.value: CRMName.get_plugin(crm.value).get_auth_url()
                 for crm in CRMName
             }
-        
-        plugin = get_plugin(crm_name)
+
+        plugin = CRMName.get_plugin(crm_name)
         return {"crm": crm_name, "auth_url": plugin.get_auth_url()}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.get("/callback/{crm_name}")
 def oauth_callback(crm_name: str, code: str, state: str):
