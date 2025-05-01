@@ -37,7 +37,7 @@ class CapsuleCRMPlugin:
         return state
 
     @hookimpl
-    def get_auth_url(self) -> str:
+    def get_auth_url(self) -> dict:
         state = self._generate_random_value()
         params = {
             "response_type": "code",
@@ -48,7 +48,7 @@ class CapsuleCRMPlugin:
         }
         auth_url = f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
         logger.info(f"Generated auth URL: {auth_url}")
-        return auth_url
+        return {self.crm_name: auth_url} 
 
     @hookimpl
     def exchange_token(self, code: str, state: str = None) -> dict:

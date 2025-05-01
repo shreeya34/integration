@@ -53,7 +53,7 @@ class ZohoCRMPlugin:
         }
         auth_url = f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
         logger.info("Generated auth URL")
-        return auth_url
+        return {self.crm_name: auth_url}
 
     @hookimpl
     def exchange_token(self, code: str, state: str = None) -> dict:

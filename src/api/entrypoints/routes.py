@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 from fastapi import APIRouter, Depends, Query, Request, HTTPException,status
 from pluggy import PluginManager
 import pluggy
@@ -11,6 +11,8 @@ from addons.storage import (
     save_tokens_to_json,
     get_state,
 )
+from api.dependency import AnnotatedPluginManager, AnnotatedSettings
+from config.settings import AppSettings
 from core.exception import (
     CRMIntegrationError,
     ContactsFetchError,
@@ -20,11 +22,15 @@ from core.exception import (
     TokenExchangeError,
     UnsupportedCRMError,
 )
-    
-import os 
+import os
 from addons.integration.crm_enum import CRMName  
+from api.utils.logger import get_logger
+
+logger = get_logger()
+
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
+
 
 
 def get_plugin(crm_name: str):
@@ -33,17 +39,51 @@ def get_plugin(crm_name: str):
     
 
 
+
+
 @router.get("/authorization-url")
-def get_auth_urls(crm_name: Optional[str] = None):
-        if crm_name is None:
-            return {
-                crm.value: CRMName.get_plugin(crm.value).get_auth_url()
-                for crm in CRMName
-            }
+def get_authorization_url_resource(
+    pm: AnnotatedPluginManager,
+    settings: AnnotatedSettings,
+    crm_name: Optional[List[str]] = Query(default=None, alias="crm_name")
+):
+    if not crm_name:
+        # Call all plugins
+        plugin_results = pm.hook.get_auth_url(settings=settings)
+    else:
+        # Filter to matching plugins
+        matching_plugins = [
+            impl.plugin
+            for impl in pm.hook.get_auth_url.get_hookimpls()
+            if getattr(impl.plugin, "crm_name", None) in crm_name
+        ]
 
-        plugin = CRMName.get_plugin(crm_name)
-        return {"crm": crm_name, "auth_url": plugin.get_auth_url()}
+        if not matching_plugins:
+            logger.warning(f"CRM plugin not found for integration crm_name(s): {crm_name}")
+            raise UnsupportedCRMError(
+                message=f"No plugins found for integration(s): {crm_name}",
+                status_code=404,
+            )
 
+        # Use only the selected plugins
+        subset = pm.subset_hook_caller(
+            "get_auth_url",
+            remove_plugins=[
+                plugin for plugin in pm.get_plugins() if plugin not in matching_plugins
+            ]
+        )
+        plugin_results = subset(settings=settings)
+
+    # Safely merge plugin outputs
+    merged_plugins: Dict[str, str] = {}
+    for plugin_result in plugin_results:
+        if isinstance(plugin_result, dict):
+            merged_plugins.update(plugin_result)
+        else:
+            logger.warning(f"Expected dict from plugin, got: {type(plugin_result)} - {plugin_result}")
+
+    logger.info(f"Authentication URLs requested for integrations: {crm_name or 'all'}")
+    return merged_plugins
 
 @router.get("/callback/{crm_name}")
 def oauth_callback(crm_name: str, code: str, state: str):
