@@ -118,45 +118,48 @@ class ZohoCRMPlugin:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
     @hookimpl
     def filter_contacts(self, contacts: Union[List, Dict]) -> List[Dict]:
-        """Filter and standardize Zoho CRM contact data"""
-        # Debug the raw input structure
-        logger.debug(f"Raw contacts input type: {type(contacts)}")
-        
-        # Extract the contact list based on input type
+        """Filter and standardize Zoho CRM contact data with guaranteed field extraction"""
+        # Handle different input formats
         if isinstance(contacts, dict):
-            if 'data' in contacts:
-                contact_list = contacts['data']  # Standard Zoho response format
-            else:
-                contact_list = [contacts]  # Single contact wrapped in dict
-        elif isinstance(contacts, list):
-            contact_list = contacts
+            contact_list = contacts.get('data', [contacts])
         else:
-            logger.error(f"Unexpected contacts type: {type(contacts)}")
-            return []
+            contact_list = contacts if isinstance(contacts, list) else [contacts]
 
         standardized_contacts = []
         for contact in contact_list:
             if not isinstance(contact, dict):
-                logger.warning(f"Skipping non-dict contact: {contact}")
                 continue
 
-            # Safely extract all fields with proper fallbacks
-            standardized_contact = {
-                "id": str(contact.get("id", "")),
-                "first_name": contact.get("First_Name", ""),
-                "last_name": contact.get("Last_Name", ""),
-                "name": contact.get("Full_Name", "").strip() or 
-                    f"{contact.get('First_Name', '')} {contact.get('Last_Name', '')}".strip(),
-                "email": contact.get("Email", ""),
-                "phone": contact.get("Phone", ""),
-                "mobile": contact.get("Mobile", contact.get("Other_Phone", "")),
+            # Extract all possible field variations (case-insensitive)
+            def get_field(data, *keys):
+                for key in keys:
+                    if key in data:
+                        return data[key]
+                    # Try case-insensitive match
+                    lower_key = key.lower()
+                    for k, v in data.items():
+                        if k.lower() == lower_key:
+                            return v
+                return ""
+
+            # Build the standardized contact
+            standardized = {
+                "id": str(get_field(contact, "id")),
+                "first_name": get_field(contact, "First_Name", "first_name"),
+                "last_name": get_field(contact, "Last_Name", "last_name"),
+                "name": get_field(contact, "Full_Name", "full_name") or 
+                    f"{get_field(contact, 'First_Name', 'first_name')} {get_field(contact, 'Last_Name', 'last_name')}".strip(),
+                "email": get_field(contact, "Email", "email"),
+                "phone": get_field(contact, "Phone", "phone"),
+                "mobile": get_field(contact, "Mobile", "mobile", "Other_Phone", "other_phone"),
             }
             
-            # Add owner information if available
-            if "Owner" in contact and isinstance(contact["Owner"], dict):
-                standardized_contact["owner_email"] = contact["Owner"].get("email", "")
-            
-            standardized_contacts.append(standardized_contact)
+            # Add owner email if available
+            owner_data = contact.get("Owner", {})
+            if isinstance(owner_data, dict):
+                standardized["owner_email"] = owner_data.get("email", "")
+
+            standardized_contacts.append(standardized)
 
         return standardized_contacts
 

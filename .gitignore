@@ -11,3 +11,5 @@ wheels/
 .states.json
 .tokens.json
 .env/
+.app_log/
+.contact_data/
