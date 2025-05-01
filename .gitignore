@@ -8,8 +8,9 @@ wheels/
 
 # venv
 .venv
-.states.json
-.tokens.json
+/src/api/states.json/
+/src/api/tokens.json/
 .env/
-.app_log/
-.contact_data/
+/src/api/app_log/
+/src/api/contact_data/
+

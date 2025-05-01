@@ -1,4 +1,0 @@
-2025-05-01 12:23:32,433 - INFO - Fetching plugin for CRM: zoho
-2025-05-01 12:23:32,434 - INFO - ZohoCRMPlugin initialized successfully
-2025-05-01 12:23:33,704 - INFO - Fetched contacts page 1 successfully
-2025-05-01 12:23:33,705 - INFO - Contacts saved to file: contact_data/zoho_contacts.json
