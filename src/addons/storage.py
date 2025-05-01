@@ -8,6 +8,7 @@ TOKEN_FILE_PATH = "tokens.json"
 STATE_FILE_PATH = "states.json"
 
 
+
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
     if "expires_in" in tokens and "expires_at" not in tokens:
         expires_at = datetime.now() + timedelta(seconds=tokens["expires_in"])
@@ -72,26 +73,40 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         return None
 
 
+
 def save_contacts_to_json(
-    contacts: dict, filename: str = "contacts.json", crm_name: str = None
+    data: dict, filename: str = None, crm_name: str = None
 ):
-
-    contacts_list = []
-
-    if crm_name and crm_name.lower() == "zoho":
-        contacts_list = contacts.get("data", [])
+    """
+    Save the entire response data to a JSON file dedicated to each CRM
+    
+    Args:
+        data: Dictionary containing the full API response data
+        filename: Output filename for the JSON file (optional)
+        crm_name: Name of the CRM (e.g., 'zoho', 'capsule')
+    """
+    # Create a directory for saving contact data if it doesn't exist
+    os.makedirs("contact_data", exist_ok=True)
+    
+    # Create a fixed filename based on the CRM type
+    if crm_name:
+        crm_name = crm_name.lower()
+        filepath = os.path.join("contact_data", f"{crm_name}_contacts.json")
     else:
-        contacts_list = contacts.get("parties", [])
+        filepath = os.path.join("contact_data", filename or "contacts.json")
 
-    if not contacts_list:
-        print("No contacts to save.")
+    # Save the entire response data structure
+    if not data:
+        print(f"No data to save for {crm_name}.")
         return
 
-    with open(filename, mode="w", encoding="utf-8") as file:
-        json.dump(contacts_list, file, indent=4, ensure_ascii=False)
+    with open(filepath, mode="w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
 
-    print(f"Saved {len(contacts_list)} contacts to {filename}")
-
+    # Get the number of contacts for logging
+    contacts_count = len(data.get("contacts", []))
+    print(f"Saved {contacts_count} contacts to {filepath}")
+    return filepath
 
 def clear_tokens(crm_name: Optional[str] = None) -> bool:
     try:

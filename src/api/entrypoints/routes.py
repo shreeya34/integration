@@ -20,6 +20,8 @@ from core.exception import (
     TokenExchangeError,
     UnsupportedCRMError,
 )
+    
+import os 
 from addons.integration.crm_enum import CRMName  
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
@@ -73,74 +75,70 @@ def refresh_token(crm_name: str, refresh_token: str):
 
 @router.get("/contacts")
 def fetch_contacts(request: Request):
-        tokens = get_stored_tokens()
-        if not tokens:
-            raise OAuthError(
-                detail="Authorization required. Please authenticate with a CRM first.",
-                status_code=status.HTTP_401_UNAUTHORIZED
-            )
+    tokens = get_stored_tokens()
+    if not tokens:
+        raise OAuthError(
+            detail="Authorization required. Please authenticate with a CRM first.",
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
-        crm_name = tokens.get("crm_name")
-        if not crm_name:
-            raise CRMIntegrationError(
-                detail="Could not determine CRM from stored tokens.",
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+    crm_name = tokens.get("crm_name")
+    if not crm_name:
+        raise CRMIntegrationError(
+            detail="Could not determine CRM from stored tokens.",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
 
-        access_token = tokens.get("access_token")
-        refresh_token = tokens.get("refresh_token")
-        if not access_token or not refresh_token:
-            raise TokenExchangeError(
-                detail="Invalid token format. Missing required tokens.",
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+    access_token = tokens.get("access_token")
+    refresh_token = tokens.get("refresh_token")
+    if not access_token or not refresh_token:
+        raise TokenExchangeError(
+            detail="Invalid token format. Missing required tokens.",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
 
-        try:
-            page = int(request.query_params.get("page", 1))
-            if page < 1:
-                raise InvalidPageNumberError(detail="Page number must be positive")
-        except ValueError:
-            raise InvalidPageNumberError()
+    try:
+        page = int(request.query_params.get("page", 1))
+        if page < 1:
+            raise InvalidPageNumberError(detail="Page number must be positive")
+    except ValueError:
+        raise InvalidPageNumberError()
 
-        try:
-            plugin = get_plugin(crm_name.lower())
-        except Exception as e:
-            raise UnsupportedCRMError(
-                crm_name=crm_name,
-                detail=f"Failed to initialize CRM plugin: {str(e)}"
-            )
+    try:
+        plugin = get_plugin(crm_name.lower())
+    except Exception as e:
+        raise UnsupportedCRMError(
+            crm_name=crm_name,
+            detail=f"Failed to initialize CRM plugin: {str(e)}"
+        )
 
-        try:
-            contacts = plugin.get_contacts(
-                access_token=access_token,
-                refresh_token=refresh_token,
-                page=page
-            )
-        except Exception as e:
-            raise ContactsFetchError(
-                detail=f"Failed to fetch contacts from {crm_name}: {str(e)}",
-                crm_name=crm_name,
-                page=page
-            )
+    try:
+        contacts = plugin.get_contacts(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            page=page
+        )
+    except Exception as e:
+        raise ContactsFetchError(
+            detail=f"Failed to fetch contacts from {crm_name}: {str(e)}",
+            crm_name=crm_name,
+            page=page
+        )
+    
+    # Prepare the response data
+    response_data = {
+        "status": "success",
+        "crm": crm_name.lower(),
+        "contacts": contacts.get("data", []),
+        "pagination": {
+            "page": contacts.get("page", 1),
+            "total": contacts.get("total", 0)
+        },
+        "message": f"Contacts fetched from {crm_name} CRM"
+    }
 
-        try:
-            if crm_name.lower() == "zoho":
-                transformed_contacts = {"parties": contacts.get("data", [])}
-                save_contacts_to_json(transformed_contacts, f"{crm_name}_contacts.json")
-            else:
-                save_contacts_to_json(contacts, f"{crm_name}_contacts.json")
-        except Exception as e:
-            raise CRMIntegrationError(
-                detail=f"Failed to save contacts: {str(e)}",
-                operation="contact_save"
-            )
-
-        return {
-            "status": "success",
-            "crm": crm_name.lower(),
-            "contacts": contacts,
-            "message": f"Contacts fetched from {crm_name} CRM",
-        }
-
-
- 
+    filepath = save_contacts_to_json(response_data, crm_name=crm_name)
+    
+    response_data["message"] = f"Contacts fetched from {crm_name} CRM and saved to {os.path.basename(filepath)}"
+    
+    return response_data

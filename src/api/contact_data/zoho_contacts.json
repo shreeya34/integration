@@ -1,0 +1,115 @@
+{
+    "status": "success",
+    "crm": "zoho",
+    "contacts": [
+        {
+            "id": "6755588000000600011",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575189",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575188",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575187",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575186",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575185",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575184",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575183",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575182",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575181",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000575180",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000558984",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        },
+        {
+            "id": "6755588000000558977",
+            "first_name": "",
+            "last_name": "",
+            "name": "",
+            "email": "",
+            "phone": ""
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "total": 13
+    },
+    "message": "Contacts fetched from zoho CRM"
+}

@@ -2,6 +2,7 @@ import json
 import random
 import string
 from datetime import datetime, timedelta
+from typing import Dict, List, Union
 from urllib.parse import urlencode
 import httpx
 from httpx import HTTPError
@@ -115,6 +116,49 @@ class ZohoCRMPlugin:
         except HTTPError as e:
             logger.exception("Token refresh request failed")
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
+    @hookimpl
+    def filter_contacts(self, contacts: Union[List, Dict]) -> List[Dict]:
+        """Filter and standardize Zoho CRM contact data"""
+        # Debug the raw input structure
+        logger.debug(f"Raw contacts input type: {type(contacts)}")
+        
+        # Extract the contact list based on input type
+        if isinstance(contacts, dict):
+            if 'data' in contacts:
+                contact_list = contacts['data']  # Standard Zoho response format
+            else:
+                contact_list = [contacts]  # Single contact wrapped in dict
+        elif isinstance(contacts, list):
+            contact_list = contacts
+        else:
+            logger.error(f"Unexpected contacts type: {type(contacts)}")
+            return []
+
+        standardized_contacts = []
+        for contact in contact_list:
+            if not isinstance(contact, dict):
+                logger.warning(f"Skipping non-dict contact: {contact}")
+                continue
+
+            # Safely extract all fields with proper fallbacks
+            standardized_contact = {
+                "id": str(contact.get("id", "")),
+                "first_name": contact.get("First_Name", ""),
+                "last_name": contact.get("Last_Name", ""),
+                "name": contact.get("Full_Name", "").strip() or 
+                    f"{contact.get('First_Name', '')} {contact.get('Last_Name', '')}".strip(),
+                "email": contact.get("Email", ""),
+                "phone": contact.get("Phone", ""),
+                "mobile": contact.get("Mobile", contact.get("Other_Phone", "")),
+            }
+            
+            # Add owner information if available
+            if "Owner" in contact and isinstance(contact["Owner"], dict):
+                standardized_contact["owner_email"] = contact["Owner"].get("email", "")
+            
+            standardized_contacts.append(standardized_contact)
+
+        return standardized_contacts
 
     @hookimpl
     def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
@@ -128,7 +172,18 @@ class ZohoCRMPlugin:
             response = httpx.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
                 logger.info(f"Fetched contacts page {page} successfully")
-                return response.json()
+                raw_data = response.json()
+                
+                # Extract the contacts array from the Zoho response
+                contacts_data = raw_data.get("data", [])
+                
+                filtered_contacts = self.filter_contacts(contacts_data)
+                return {
+                    "data": filtered_contacts,
+                    "page": page,
+                    "total": raw_data.get("info", {}).get("count", len(filtered_contacts))
+                }
+                
             if response.status_code == 401:
                 logger.warning("Access token expired, attempting refresh")
                 new_tokens = self.refresh_access_token(refresh_token)
@@ -136,9 +191,18 @@ class ZohoCRMPlugin:
                 retry_response = httpx.get(url, headers=headers, timeout=30.0)
                 if retry_response.status_code == 200:
                     logger.info("Fetched contacts after token refresh")
-                    return retry_response.json()
+                    raw_data = retry_response.json()
+                    contacts_data = raw_data.get("data", [])
+                    filtered_contacts = self.filter_contacts(contacts_data)
+                    return {
+                        "data": filtered_contacts,
+                        "page": page,
+                        "total": raw_data.get("info", {}).get("count", len(filtered_contacts)),
+                        "access_token": new_tokens['access_token']  # Return the new token
+                    }
                 logger.error("Failed to fetch contacts after token refresh")
                 raise APIRequestError("Failed after token refresh")
+                
             logger.error(f"Failed to fetch contacts: Status {response.status_code}")
             raise APIRequestError(f"Failed with status {response.status_code}")
         except HTTPError as e:

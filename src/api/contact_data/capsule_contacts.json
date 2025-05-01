@@ -1,0 +1,92 @@
+{
+    "status": "success",
+    "crm": "capsule",
+    "contacts": [
+        {
+            "id": 270004326,
+            "first_name": "",
+            "last_name": "",
+            "name": "Capsule",
+            "email": "",
+            "phone": "",
+            "company": ""
+        },
+        {
+            "id": 270004325,
+            "first_name": "shreeya",
+            "last_name": "shakya",
+            "name": "shreeya shakya",
+            "email": "",
+            "phone": "",
+            "company": ""
+        },
+        {
+            "id": 270004639,
+            "first_name": "Palpasa",
+            "last_name": "Manandhar",
+            "name": "Palpasa Manandhar",
+            "email": "palpasa1@gmail.com",
+            "phone": "",
+            "company": "xyz"
+        },
+        {
+            "id": 270004640,
+            "first_name": "",
+            "last_name": "",
+            "name": "xyz",
+            "email": "",
+            "phone": "",
+            "company": ""
+        },
+        {
+            "id": 270005003,
+            "first_name": "Sandhya",
+            "last_name": "Shrestha",
+            "name": "Sandhya Shrestha",
+            "email": "sandhya65@gmail.com",
+            "phone": "",
+            "company": "wws"
+        },
+        {
+            "id": 270005004,
+            "first_name": "",
+            "last_name": "",
+            "name": "wws",
+            "email": "",
+            "phone": "",
+            "company": ""
+        },
+        {
+            "id": 270286992,
+            "first_name": "Tisha",
+            "last_name": "Shrestha",
+            "name": "Tisha Shrestha",
+            "email": "tisha1@gmail.com",
+            "phone": "",
+            "company": "aglie"
+        },
+        {
+            "id": 270286993,
+            "first_name": "",
+            "last_name": "",
+            "name": "aglie",
+            "email": "",
+            "phone": "",
+            "company": ""
+        },
+        {
+            "id": 270289211,
+            "first_name": "Amisha",
+            "last_name": "Singh",
+            "name": "Amisha Singh",
+            "email": "amisha1@gmail.com",
+            "phone": "",
+            "company": "aglie"
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "total": 9
+    },
+    "message": "Contacts fetched from capsule CRM"
+}

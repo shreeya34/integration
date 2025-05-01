@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import datetime, timedelta
+from typing import Dict, List, Union
 from urllib.parse import urlencode
 import httpx
 from addons.integration.hooks import hookimpl
@@ -125,6 +126,34 @@ class CapsuleCRMPlugin:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
 
     @hookimpl
+    def filter_contacts(self, contacts: Union[List, Dict]) -> List[Dict]:
+        """Filter and standardize Capsule CRM contact data"""
+        if isinstance(contacts, dict):
+            contact_list = contacts.get("parties", [])
+        else:
+            contact_list = contacts
+
+        standardized_contacts = []
+        for contact in contact_list:
+            emails = contact.get("emailAddresses", [])
+            primary_email = next((e["address"] for e in emails if e.get("type") == "Work"), "")
+            
+            phones = contact.get("phoneNumbers", [])
+            primary_phone = next((p["number"] for p in phones if p.get("type") == "Work"), "")
+
+            standardized_contacts.append({
+                "id": contact.get("id"),
+                "first_name": contact.get("firstName", ""),
+                "last_name": contact.get("lastName", ""),
+                "name": contact.get("name", f"{contact.get('firstName', '')} {contact.get('lastName', '')}".strip()),
+                "email": primary_email,
+                "phone": primary_phone,
+                "company": contact.get("organisation", {}).get("name", "") if isinstance(contact.get("organisation"), dict) else ""
+            })
+        
+        return standardized_contacts
+
+    @hookimpl
     def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
         url = f"https://api.capsulecrm.com/api/v2/parties?page={page}"
         headers = {
@@ -138,7 +167,13 @@ class CapsuleCRMPlugin:
 
                 if response.status_code == 200:
                     logger.info(f"Fetched contacts page {page} successfully.")
-                    return response.json()
+                    raw_contacts = response.json()
+                    filtered_contacts = self.filter_contacts(raw_contacts)
+                    return {
+                        "data": filtered_contacts,
+                        "page": page,
+                        "total": raw_contacts.get("total", len(filtered_contacts))
+                    }
 
                 if response.status_code == 401:
                     logger.warning("Access token expired, attempting refresh.")
@@ -148,7 +183,13 @@ class CapsuleCRMPlugin:
 
                     if retry_response.status_code == 200:
                         logger.info(f"Fetched contacts page {page} after token refresh.")
-                        return retry_response.json()
+                        raw_contacts = retry_response.json()
+                        filtered_contacts = self.filter_contacts(raw_contacts)
+                        return {
+                            "data": filtered_contacts,
+                            "page": page,
+                            "total": raw_contacts.get("total", len(filtered_contacts))
+                        }
 
                     logger.error("Failed to fetch contacts even after token refresh.")
                     raise APIRequestError("Failed after token refresh")
