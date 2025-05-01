@@ -77,25 +77,15 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
 def save_contacts_to_json(
     data: dict, filename: str = None, crm_name: str = None
 ):
-    """
-    Save the entire response data to a JSON file dedicated to each CRM
-    
-    Args:
-        data: Dictionary containing the full API response data
-        filename: Output filename for the JSON file (optional)
-        crm_name: Name of the CRM (e.g., 'zoho', 'capsule')
-    """
-    # Create a directory for saving contact data if it doesn't exist
+ 
     os.makedirs("contact_data", exist_ok=True)
     
-    # Create a fixed filename based on the CRM type
     if crm_name:
         crm_name = crm_name.lower()
         filepath = os.path.join("contact_data", f"{crm_name}_contacts.json")
     else:
         filepath = os.path.join("contact_data", filename or "contacts.json")
 
-    # Save the entire response data structure
     if not data:
         print(f"No data to save for {crm_name}.")
         return
@@ -103,7 +93,6 @@ def save_contacts_to_json(
     with open(filepath, mode="w", encoding="utf-8") as file:
         json.dump(data, file, indent=4, ensure_ascii=False)
 
-    # Get the number of contacts for logging
     contacts_count = len(data.get("contacts", []))
     print(f"Saved {contacts_count} contacts to {filepath}")
     return filepath
