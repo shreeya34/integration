@@ -118,8 +118,6 @@ class ZohoCRMPlugin:
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
     @hookimpl
     def filter_contacts(self, contacts: Union[List, Dict]) -> List[Dict]:
-        """Filter and standardize Zoho CRM contact data with guaranteed field extraction"""
-        # Handle different input formats
         if isinstance(contacts, dict):
             contact_list = contacts.get('data', [contacts])
         else:
@@ -130,12 +128,10 @@ class ZohoCRMPlugin:
             if not isinstance(contact, dict):
                 continue
 
-            # Extract all possible field variations (case-insensitive)
             def get_field(data, *keys):
                 for key in keys:
                     if key in data:
                         return data[key]
-                    # Try case-insensitive match
                     lower_key = key.lower()
                     for k, v in data.items():
                         if k.lower() == lower_key:

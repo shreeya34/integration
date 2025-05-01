@@ -29,6 +29,12 @@ class Spec:
     def get_contacts(crm_name: str, access_token: str, refresh_token: str, page: int = 1) -> dict:
         """Fetch contacts from the CRM."""
         ...
+        
+    @hookspec
+    def filter_contacts(crm_name: str, access_token: str, refresh_token: str, page: int = 1) -> dict:
+        """Fetch contacts from the CRM."""
+        ...
+
 
 
 def get_plugin_manager(crm_name: str = None) -> pluggy.PluginManager:
