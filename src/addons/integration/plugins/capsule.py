@@ -48,7 +48,7 @@ class CapsuleCRMPlugin:
         }
         auth_url = f"{self.crm_settings.config.auth_url}?{urlencode(params)}"
         logger.info(f"Generated auth URL: {auth_url}")
-        return {self.crm_name: auth_url} 
+        return {self.crm_name: auth_url}
 
     @hookimpl
     def exchange_token(self, code: str, state: str = None) -> dict:
@@ -136,25 +136,40 @@ class CapsuleCRMPlugin:
         standardized_contacts = []
         for contact in contact_list:
             emails = contact.get("emailAddresses", [])
-            primary_email = next((e["address"] for e in emails if e.get("type") == "Work"), "")
-            
-            phones = contact.get("phoneNumbers", [])
-            primary_phone = next((p["number"] for p in phones if p.get("type") == "Work"), "")
+            primary_email = next(
+                (e["address"] for e in emails if e.get("type") == "Work"), ""
+            )
 
-            standardized_contacts.append({
-                "id": contact.get("id"),
-                "first_name": contact.get("firstName", ""),
-                "last_name": contact.get("lastName", ""),
-                "name": contact.get("name", f"{contact.get('firstName', '')} {contact.get('lastName', '')}".strip()),
-                "email": primary_email,
-                "phone": primary_phone,
-                "company": contact.get("organisation", {}).get("name", "") if isinstance(contact.get("organisation"), dict) else ""
-            })
-        
+            phones = contact.get("phoneNumbers", [])
+            primary_phone = next(
+                (p["number"] for p in phones if p.get("type") == "Work"), ""
+            )
+
+            standardized_contacts.append(
+                {
+                    "id": contact.get("id"),
+                    "first_name": contact.get("firstName", ""),
+                    "last_name": contact.get("lastName", ""),
+                    "name": contact.get(
+                        "name",
+                        f"{contact.get('firstName', '')} {contact.get('lastName', '')}".strip(),
+                    ),
+                    "email": primary_email,
+                    "phone": primary_phone,
+                    "company": (
+                        contact.get("organisation", {}).get("name", "")
+                        if isinstance(contact.get("organisation"), dict)
+                        else ""
+                    ),
+                }
+            )
+
         return standardized_contacts
 
     @hookimpl
-    def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
+    def get_contacts(
+        self, access_token: str, refresh_token: str, page: int = 1
+    ) -> dict:
         url = f"https://api.capsulecrm.com/api/v2/parties?page={page}"
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -172,7 +187,7 @@ class CapsuleCRMPlugin:
                     return {
                         "data": filtered_contacts,
                         "page": page,
-                        "total": raw_contacts.get("total", len(filtered_contacts))
+                        "total": raw_contacts.get("total", len(filtered_contacts)),
                     }
 
                 if response.status_code == 401:
@@ -182,19 +197,23 @@ class CapsuleCRMPlugin:
                     retry_response = client.get(url, headers=headers)
 
                     if retry_response.status_code == 200:
-                        logger.info(f"Fetched contacts page {page} after token refresh.")
+                        logger.info(
+                            f"Fetched contacts page {page} after token refresh."
+                        )
                         raw_contacts = retry_response.json()
                         filtered_contacts = self.filter_contacts(raw_contacts)
                         return {
                             "data": filtered_contacts,
                             "page": page,
-                            "total": raw_contacts.get("total", len(filtered_contacts))
+                            "total": raw_contacts.get("total", len(filtered_contacts)),
                         }
 
                     logger.error("Failed to fetch contacts even after token refresh.")
                     raise APIRequestError("Failed after token refresh")
 
-                logger.error(f"Failed to fetch contacts, status code: {response.status_code}")
+                logger.error(
+                    f"Failed to fetch contacts, status code: {response.status_code}"
+                )
                 raise APIRequestError(f"Failed with status {response.status_code}")
         except httpx.HTTPError as e:
             logger.exception("Request to fetch contacts failed.")

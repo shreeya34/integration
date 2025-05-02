@@ -1,7 +1,6 @@
 import json
 import random
 import string
-from datetime import datetime, timedelta
 from typing import Dict, List, Union
 from urllib.parse import urlencode
 import httpx
@@ -22,6 +21,7 @@ from api.utils.logger import get_logger
 logger = get_logger()
 
 settings = settings.AppSettings()
+
 
 class ZohoCRMPlugin:
     def __init__(self):
@@ -61,7 +61,9 @@ class ZohoCRMPlugin:
             stored_state = get_state(self.crm_name)
             if not stored_state or stored_state != state:
                 logger.warning("Invalid state parameter")
-                raise InvalidStateError(status_code=400, detail="Invalid state parameter")
+                raise InvalidStateError(
+                    status_code=400, detail="Invalid state parameter"
+                )
             logger.info("State verified successfully")
 
         try:
@@ -116,10 +118,11 @@ class ZohoCRMPlugin:
         except HTTPError as e:
             logger.exception("Token refresh request failed")
             raise TokenRefreshError(f"Token refresh request failed: {str(e)}")
+
     @hookimpl
     def filter_contacts(self, contacts: Union[List, Dict]) -> List[Dict]:
         if isinstance(contacts, dict):
-            contact_list = contacts.get('data', [contacts])
+            contact_list = contacts.get("data", [contacts])
         else:
             contact_list = contacts if isinstance(contacts, list) else [contacts]
 
@@ -138,19 +141,19 @@ class ZohoCRMPlugin:
                             return v
                 return ""
 
-            # Build the standardized contact
             standardized = {
                 "id": str(get_field(contact, "id")),
                 "first_name": get_field(contact, "First_Name", "first_name"),
                 "last_name": get_field(contact, "Last_Name", "last_name"),
-                "name": get_field(contact, "Full_Name", "full_name") or 
-                    f"{get_field(contact, 'First_Name', 'first_name')} {get_field(contact, 'Last_Name', 'last_name')}".strip(),
+                "name": get_field(contact, "Full_Name", "full_name")
+                or f"{get_field(contact, 'First_Name', 'first_name')} {get_field(contact, 'Last_Name', 'last_name')}".strip(),
                 "email": get_field(contact, "Email", "email"),
                 "phone": get_field(contact, "Phone", "phone"),
-                "mobile": get_field(contact, "Mobile", "mobile", "Other_Phone", "other_phone"),
+                "mobile": get_field(
+                    contact, "Mobile", "mobile", "Other_Phone", "other_phone"
+                ),
             }
-            
-            # Add owner email if available
+
             owner_data = contact.get("Owner", {})
             if isinstance(owner_data, dict):
                 standardized["owner_email"] = owner_data.get("email", "")
@@ -160,7 +163,9 @@ class ZohoCRMPlugin:
         return standardized_contacts
 
     @hookimpl
-    def get_contacts(self, access_token: str, refresh_token: str, page: int = 1) -> dict:
+    def get_contacts(
+        self, access_token: str, refresh_token: str, page: int = 1
+    ) -> dict:
         try:
             url = f"https://www.zohoapis.com/crm/v2/Contacts?page={page}"
             headers = {
@@ -172,21 +177,25 @@ class ZohoCRMPlugin:
             if response.status_code == 200:
                 logger.info(f"Fetched contacts page {page} successfully")
                 raw_data = response.json()
-                
+
                 # Extract the contacts array from the Zoho response
                 contacts_data = raw_data.get("data", [])
-                
+
                 filtered_contacts = self.filter_contacts(contacts_data)
                 return {
                     "data": filtered_contacts,
                     "page": page,
-                    "total": raw_data.get("info", {}).get("count", len(filtered_contacts))
+                    "total": raw_data.get("info", {}).get(
+                        "count", len(filtered_contacts)
+                    ),
                 }
-                
+
             if response.status_code == 401:
                 logger.warning("Access token expired, attempting refresh")
                 new_tokens = self.refresh_access_token(refresh_token)
-                headers["Authorization"] = f"Zoho-oauthtoken {new_tokens['access_token']}"
+                headers["Authorization"] = (
+                    f"Zoho-oauthtoken {new_tokens['access_token']}"
+                )
                 retry_response = httpx.get(url, headers=headers, timeout=30.0)
                 if retry_response.status_code == 200:
                     logger.info("Fetched contacts after token refresh")
@@ -196,12 +205,16 @@ class ZohoCRMPlugin:
                     return {
                         "data": filtered_contacts,
                         "page": page,
-                        "total": raw_data.get("info", {}).get("count", len(filtered_contacts)),
-                        "access_token": new_tokens['access_token']  # Return the new token
+                        "total": raw_data.get("info", {}).get(
+                            "count", len(filtered_contacts)
+                        ),
+                        "access_token": new_tokens[
+                            "access_token"
+                        ],  # Return the new token
                     }
                 logger.error("Failed to fetch contacts after token refresh")
                 raise APIRequestError("Failed after token refresh")
-                
+
             logger.error(f"Failed to fetch contacts: Status {response.status_code}")
             raise APIRequestError(f"Failed with status {response.status_code}")
         except HTTPError as e:

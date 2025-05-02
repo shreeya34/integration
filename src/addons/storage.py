@@ -8,7 +8,6 @@ TOKEN_FILE_PATH = "tokens.json"
 STATE_FILE_PATH = "states.json"
 
 
-
 def save_tokens_to_json(tokens: Dict[str, Any], crm_name: str):
     if "expires_in" in tokens and "expires_at" not in tokens:
         expires_at = datetime.now() + timedelta(seconds=tokens["expires_in"])
@@ -73,13 +72,10 @@ def get_stored_tokens(crm_name: Optional[str] = None) -> Optional[Dict[str, Any]
         return None
 
 
+def save_contacts_to_json(data: dict, filename: str = None, crm_name: str = None):
 
-def save_contacts_to_json(
-    data: dict, filename: str = None, crm_name: str = None
-):
- 
     os.makedirs("contact_data", exist_ok=True)
-    
+
     if crm_name:
         crm_name = crm_name.lower()
         filepath = os.path.join("contact_data", f"{crm_name}_contacts.json")
@@ -96,6 +92,7 @@ def save_contacts_to_json(
     contacts_count = len(data.get("contacts", []))
     print(f"Saved {contacts_count} contacts to {filepath}")
     return filepath
+
 
 def clear_tokens(crm_name: Optional[str] = None) -> bool:
     try:

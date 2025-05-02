@@ -2,9 +2,10 @@ from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from api.utils.logger import get_logger  
+from api.utils.logger import get_logger
 
 logger = get_logger()
+
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -29,6 +30,5 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
             return JSONResponse(
-                status_code=500,
-                content={"detail": "An unexpected error occurred."}
+                status_code=500, content={"detail": "An unexpected error occurred."}
             )

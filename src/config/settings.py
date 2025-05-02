@@ -19,6 +19,7 @@ class CRMSettings(BaseModel):
 
 class AppSettings(BaseSettings):
     crms: Dict[str, CRMSettings] = Field(..., alias="CRMS")
+
     class Config:
         env_file = ".env"
         env_nested_delimiter = "__"

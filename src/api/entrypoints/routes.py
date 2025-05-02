@@ -1,9 +1,5 @@
 from typing import Dict, List, Optional
-from fastapi import APIRouter, Depends, Query, Request, HTTPException, status
-from pluggy import PluginManager
-from addons.integration.hookspec import Spec, get_plugin_manager
-from addons.integration.plugins.zoho import ZohoCRMPlugin
-from addons.integration.plugins.capsule import CapsuleCRMPlugin
+from fastapi import APIRouter, Query, Request, HTTPException, status
 from addons.storage import (
     get_stored_tokens,
     save_contacts_to_json,
@@ -11,7 +7,6 @@ from addons.storage import (
     get_state,
 )
 from api.dependency import AnnotatedPluginManager, AnnotatedSettings
-from config.settings import AppSettings
 from core.exception import (
     CRMIntegrationError,
     ContactsFetchError,
